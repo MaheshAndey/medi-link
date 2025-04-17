@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Details - MediLink{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <div class="mb-6">
+        <a href="/admins/patients" class="text-blue-600 hover:text-blue-800 flex items-center">
+            <i data-feather="arrow-left" class="h-4 w-4 mr-1"></i> Back to Patients
+        </a>
+    </div>
+    
+    <h1 class="text-2xl font-semibold mb-6">Patient Profile: {{ patient.name }}</h1>
+    
+    <!-- Patient Information -->
+    <div class="bg-white shadow rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Personal Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <p class="text-gray-600 mb-1">Name</p>
+                <p class="font-medium">{{ patient.name }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Email</p>
+                <p class="font-medium">{{ patient.user.email }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Date of Birth</p>
+                <p class="font-medium">
+                    {% if patient.dob %}
+                        {{ patient.dob.strftime('%B %d, %Y') }} 
+                        ({{ (now().date() - patient.dob).days // 365 }} years)
+                    {% else %}
+                        Not provided
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Gender</p>
+                <p class="font-medium">{{ patient.gender | title if patient.gender else 'Not provided' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Contact</p>
+                <p class="font-medium">{{ patient.contact if patient.contact else 'Not provided' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Address</p>
+                <p class="font-medium">{{ patient.address if patient.address else 'Not provided' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Status</p>
+                <p class="font-medium">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        {% if patient.user.is_active %} bg-green-100 text-green-800 {% else %} bg-red-100 text-red-800 {% endif %}">
+                        {{ 'Active' if patient.user.is_active else 'Inactive' }}
+                    </span>
+                </p>
+            </div>
+        </div>
+        
+        <div class="mt-6 flex space-x-4">
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700" 
+                    onclick="editPatient()">
+                Edit Information
+            </button>
+            <button class="bg-{{ 'red' if patient.user.is_active else 'green' }}-600 text-white px-4 py-2 rounded-lg hover:bg-{{ 'red' if patient.user.is_active else 'green' }}-700" 
+                    onclick="toggleStatus()">
+                {{ 'Deactivate Account' if patient.user.is_active else 'Activate Account' }}
+            </button>
+        </div>
+    </div>
+    
+    <!-- Health Records -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
+            <h2 class="font-semibold">Health Records</h2>
+        </div>
+        
+        <div class="p-6">
+            {% if health_records %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diagnosis</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for record in health_records %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ record.created_at.strftime('%b %d, %Y') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">Dr. {{ record.doctor.name }}</div>
+                                        <div class="text-xs text-gray-500">{{ record.doctor.specialization.name if record.doctor.specialization else 'General' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">{{ record.diagnosis|truncate(50) if record.diagnosis else 'Not recorded' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <a href="/admins/health-records/{{ record.record_id }}" class="text-blue-600 hover:text-blue-800">View Details</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center text-gray-500">
+                    No health records found for this patient.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Appointment History -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-green-600 text-white flex justify-between items-center">
+            <h2 class="font-semibold">Appointment History</h2>
+        </div>
+        
+        <div class="p-6">
+            {% if appointments %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for appointment in appointments %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ appointment.appointment_time.strftime('%b %d, %Y') }}</div>
+                                        <div class="text-sm text-gray-500">{{ appointment.appointment_time.strftime('%I:%M %p') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="font-medium text-gray-900">Dr. {{ appointment.doctor.name }}</div>
+                                        <div class="text-xs text-gray-500">{{ appointment.doctor.specialization.name if appointment.doctor.specialization else 'General' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            {% if appointment.status == 'scheduled' %} bg-yellow-100 text-yellow-800 
+                                            {% elif appointment.status == 'confirmed' %} bg-green-100 text-green-800 
+                                            {% elif appointment.status == 'completed' %} bg-blue-100 text-blue-800 
+                                            {% elif appointment.status == 'cancelled' %} bg-red-100 text-red-800 
+                                            {% elif appointment.status == 'no_show' %} bg-gray-100 text-gray-800 
+                                            {% endif %}">
+                                            {{ appointment.status | title }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">{{ appointment.reason if appointment.reason else 'Not specified' }}</div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center text-gray-500">
+                    No appointment history found for this patient.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Billing History -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 bg-red-600 text-white flex justify-between items-center">
+            <h2 class="font-semibold">Billing History</h2>
+        </div>
+        
+        <div class="p-6">
+            {% if billings %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appointment</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for bill in billings %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ bill.created_at.strftime('%b %d, %Y') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="font-medium text-gray-900">${{ "%.2f"|format(bill.amount) }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            {% if bill.status == 'pending' %} bg-yellow-100 text-yellow-800 
+                                            {% elif bill.status == 'paid' %} bg-green-100 text-green-800 
+                                            {% elif bill.status == 'overdue' %} bg-red-100 text-red-800 
+                                            {% elif bill.status == 'cancelled' %} bg-gray-100 text-gray-800 
+                                            {% endif %}">
+                                            {{ bill.status | title }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">
+                                            {{ bill.payment_method if bill.payment_method else 'Not paid' }}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">
+                                            {% if bill.appointment %}
+                                                {{ bill.appointment.appointment_time.strftime('%b %d, %Y') }} with Dr. {{ bill.appointment.doctor.name }}
+                                            {% else %}
+                                                No appointment linked
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center text-gray-500">
+                    No billing history found for this patient.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Edit Patient Modal -->
+    <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-medium">Edit Patient Information</h3>
+                <button onclick="hideEditModal()" class="text-gray-400 hover:text-gray-500">
+                    <span class="text-2xl">&times;</span>
+                </button>
+            </div>
+            
+            <form method="post" action="/api/patients/{{ patient.patient_id }}" class="mt-4">
+                <div class="mb-4">
+                    <label for="name" class="block text-gray-700 font-medium mb-2">Name</label>
+                    <input type="text" id="name" name="name" value="{{ patient.name }}" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="dob" class="block text-gray-700 font-medium mb-2">Date of Birth</label>
+                    <input type="date" id="dob" name="dob" 
+                           value="{{ patient.dob.strftime('%Y-%m-%d') if patient.dob else '' }}" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="gender" class="block text-gray-700 font-medium mb-2">Gender</label>
+                    <select id="gender" name="gender" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Gender</option>
+                        <option value="male" {% if patient.gender == 'male' %}selected{% endif %}>Male</option>
+                        <option value="female" {% if patient.gender == 'female' %}selected{% endif %}>Female</option>
+                        <option value="other" {% if patient.gender == 'other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="contact" class="block text-gray-700 font-medium mb-2">Contact Number</label>
+                    <input type="text" id="contact" name="contact" value="{{ patient.contact }}" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="address" class="block text-gray-700 font-medium mb-2">Address</label>
+                    <textarea id="address" name="address" rows="3" 
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">{{ patient.address }}</textarea>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="button" onclick="hideEditModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                        Update Information
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    function editPatient() {
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+    
+    function hideEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+    
+    function toggleStatus() {
+        if (confirm("Are you sure you want to {{ 'deactivate' if patient.user.is_active else 'activate' }} this patient's account?")) {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = '/api/users/{{ patient.user_id }}';
+            
+            const statusInput = document.createElement('input');
+            statusInput.type = 'hidden';
+            statusInput.name = 'is_active';
+            statusInput.value = '{{ 'false' if patient.user.is_active else 'true' }}';
+            
+            form.appendChild(statusInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
+{% endblock %}
+{% endblock %}

@@ -34,15 +34,6 @@ async def login(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     
-    # Set cookie
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        expires=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    )
-    
     # Redirect based on role
     if user.role == "patient":
         redirect_url = "/patients/dashboard"
@@ -52,8 +43,18 @@ async def login(
         redirect_url = "/admins/dashboard"
     else:
         redirect_url = "/"
-
-    return RedirectResponse(url=redirect_url, status_code=303)
+    # Create redirect response and SET THE COOKIE
+    redirect_response = RedirectResponse(url=redirect_url, status_code=status.HTTP_303_SEE_OTHER)
+    redirect_response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,  # ! Important: Protects against XSS
+        max_age=int(access_token_expires.total_seconds()), # Cookie expiry in seconds
+        expires=int(access_token_expires.total_seconds()), # For older browsers
+        samesite="lax", # Recommended for security (lax or strict)
+        # secure=True, # ! Uncomment this in PRODUCTION if served over HTTPS
+    )
+    return redirect_response
 
 @router.post("/token", response_model=schemas.Token)
 async def login_for_access_token(

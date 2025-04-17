@@ -1,4 +1,5 @@
 import os
+import logging
 from fastapi import FastAPI, Request, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -13,12 +14,18 @@ from app.routers import (
     feedback, insurance
 )
 from app.dependencies import get_current_user
+from app.init_db import init_db
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Initialize database (creates tables and default admin)
+logger.info("Initializing database...")
+init_db()
 
 app = FastAPI(title="MediLink Healthcare Management System")
 
@@ -30,6 +37,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Setup templates
 templates = Jinja2Templates(directory="app/templates")

@@ -31,7 +31,7 @@ class UserResponse(UserBase):
     is_active: bool
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Token schemas
 class Token(BaseModel):
@@ -64,7 +64,7 @@ class PatientResponse(PatientBase):
     user_id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Doctor schemas
 class DoctorBase(BaseModel):
@@ -87,7 +87,7 @@ class DoctorResponse(DoctorBase):
     user_id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Admin schemas
 class AdminBase(BaseModel):
@@ -106,7 +106,7 @@ class AdminResponse(AdminBase):
     user_id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Appointment schemas
 class AppointmentStatus(str, Enum):
@@ -137,7 +137,7 @@ class AppointmentResponse(AppointmentBase):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Doctor Schedule schemas
 class DoctorScheduleBase(BaseModel):
@@ -160,7 +160,7 @@ class DoctorScheduleResponse(DoctorScheduleBase):
     schedule_id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Health Record schemas
 class HealthRecordBase(BaseModel):
@@ -185,7 +185,7 @@ class HealthRecordResponse(HealthRecordBase):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Prescription schemas
 class PrescriptionBase(BaseModel):
@@ -209,7 +209,7 @@ class PrescriptionResponse(PrescriptionBase):
     created_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Test schemas
 class TestStatus(str, Enum):
@@ -241,7 +241,7 @@ class TestResponse(TestBase):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Billing schemas
 class BillingStatus(str, Enum):
@@ -271,7 +271,7 @@ class BillingResponse(BillingBase):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Feedback schemas
 class FeedbackBase(BaseModel):
@@ -293,7 +293,7 @@ class FeedbackResponse(FeedbackBase):
     created_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Insurance schemas
 class InsuranceBase(BaseModel):
@@ -316,7 +316,7 @@ class InsuranceResponse(InsuranceBase):
     insurance_id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Notification schemas
 class NotificationBase(BaseModel):
@@ -336,7 +336,7 @@ class NotificationResponse(NotificationBase):
     timestamp: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Specialization schemas
 class SpecializationBase(BaseModel):
@@ -354,7 +354,7 @@ class SpecializationResponse(SpecializationBase):
     specialization_id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Combined schemas for registration
 class PatientRegistration(BaseModel):

@@ -1,0 +1,94 @@
+<aside class="w-64 bg-white border-r overflow-y-auto" x-data="{ open: {} }">
+    <div class="p-6 border-b">
+        <div class="flex flex-col items-center">
+            {% if user.role == 'patient' and user.patient %}
+                <div class="font-medium text-gray-900">{{ user.patient.name }}</div>
+                <div class="text-sm text-gray-500">Patient</div>
+            {% elif user.role == 'doctor' and user.doctor %}
+                <div class="font-medium text-gray-900">Dr. {{ user.doctor.name }}</div>
+                <div class="text-sm text-gray-500">{{ user.doctor.specialization.name if user.doctor.specialization else 'Doctor' }}</div>
+            {% elif user.role == 'admin' and user.admin %}
+                <div class="font-medium text-gray-900">{{ user.admin.name }}</div>
+                <div class="text-sm text-gray-500">Administrator</div>
+            {% else %}
+                <div class="font-medium text-gray-900">{{ user.email }}</div>
+                <div class="text-sm text-gray-500">{{ user.role | title }}</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <nav class="p-4">
+        {% if user.role == 'patient' %}
+            <a href="/patients/dashboard" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/patients/dashboard' else 'text-gray-700' }}">
+                <i data-feather="home" class="h-5 w-5"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/patients/appointments" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/patients/appointments' else 'text-gray-700' }}">
+                <i data-feather="calendar" class="h-5 w-5"></i>
+                <span>Appointments</span>
+            </a>
+            <a href="/patients/health-records" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/patients/health-records' else 'text-gray-700' }}">
+                <i data-feather="file-text" class="h-5 w-5"></i>
+                <span>Health Records</span>
+            </a>
+            <a href="/patients/prescriptions" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/patients/prescriptions' else 'text-gray-700' }}">
+                <i data-feather="clipboard" class="h-5 w-5"></i>
+                <span>Prescriptions</span>
+            </a>
+            <a href="/patients/tests" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/patients/tests' else 'text-gray-700' }}">
+                <i data-feather="activity" class="h-5 w-5"></i>
+                <span>Test Results</span>
+            </a>
+            <a href="/patients/billing" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/patients/billing' else 'text-gray-700' }}">
+                <i data-feather="dollar-sign" class="h-5 w-5"></i>
+                <span>Billing</span>
+            </a>
+            <a href="/patients/insurance" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/patients/insurance' else 'text-gray-700' }}">
+                <i data-feather="shield" class="h-5 w-5"></i>
+                <span>Insurance</span>
+            </a>
+        {% elif user.role == 'doctor' %}
+            <a href="/doctors/dashboard" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/doctors/dashboard' else 'text-gray-700' }}">
+                <i data-feather="home" class="h-5 w-5"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/doctors/appointments" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/doctors/appointments' else 'text-gray-700' }}">
+                <i data-feather="calendar" class="h-5 w-5"></i>
+                <span>Appointments</span>
+            </a>
+            <a href="/doctors/patients" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/doctors/patients' else 'text-gray-700' }}">
+                <i data-feather="users" class="h-5 w-5"></i>
+                <span>Patients</span>
+            </a>
+            <a href="/doctors/schedule" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/doctors/schedule' else 'text-gray-700' }}">
+                <i data-feather="clock" class="h-5 w-5"></i>
+                <span>Schedule</span>
+            </a>
+        {% elif user.role == 'admin' %}
+            <a href="/admins/dashboard" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/admins/dashboard' else 'text-gray-700' }}">
+                <i data-feather="home" class="h-5 w-5"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/admins/users" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/admins/users' else 'text-gray-700' }}">
+                <i data-feather="users" class="h-5 w-5"></i>
+                <span>Users</span>
+            </a>
+            <a href="/admins/doctors" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/admins/doctors' else 'text-gray-700' }}">
+                <i data-feather="user-plus" class="h-5 w-5"></i>
+                <span>Doctors</span>
+            </a>
+            <a href="/admins/patients" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/admins/patients' else 'text-gray-700' }}">
+                <i data-feather="user" class="h-5 w-5"></i>
+                <span>Patients</span>
+            </a>
+            <a href="/admins/appointments" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/admins/appointments' else 'text-gray-700' }}">
+                <i data-feather="calendar" class="h-5 w-5"></i>
+                <span>Appointments</span>
+            </a>
+            <a href="/admins/specializations" class="flex items-center space-x-2 mb-4 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors {{ 'bg-blue-100 text-blue-800' if request.path == '/admins/specializations' else 'text-gray-700' }}">
+                <i data-feather="tag" class="h-5 w-5"></i>
+                <span>Specializations</span>
+            </a>
+        {% endif %}
+    </nav>
+</aside>

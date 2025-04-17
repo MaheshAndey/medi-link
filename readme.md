@@ -69,8 +69,6 @@ After setting up the `.env` and installing dependencies:
 uvicorn main:app --reload
 ```
 
-> Replace `main:app` if your app entry point is different.
-
 ---
 
 ## 🌐 API Access

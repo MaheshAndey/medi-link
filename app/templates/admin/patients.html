@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Patients Management - MediLink{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold">Patients Management</h1>
+        <a href="/admins/users" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            Add New Patient
+        </a>
+    </div>
+    
+    <!-- Patients List -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 bg-gray-100 flex justify-between items-center">
+            <h2 class="font-semibold">Patients</h2>
+            <div class="flex space-x-2">
+                <form method="get" action="/admins/patients" class="flex items-center space-x-2">
+                    <input type="text" name="search" value="{{ search if search else '' }}" 
+                           placeholder="Search by name" 
+                           class="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button type="submit" class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700">
+                        <i data-feather="search" class="h-4 w-4"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        {% if patients %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age & Gender</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for patient in patients %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ patient.patient_id }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-medium text-gray-900">{{ patient.name }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ patient.user.email }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {% if patient.dob %}
+                                            {{ (now().date() - patient.dob).days // 365 }} years
+                                        {% else %}
+                                            Age unknown
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ patient.gender | title if patient.gender else 'Not specified' }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ patient.contact if patient.contact else 'Not provided' }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if patient.user.is_active %} bg-green-100 text-green-800 {% else %} bg-red-100 text-red-800 {% endif %}">
+                                        {{ 'Active' if patient.user.is_active else 'Inactive' }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex space-x-2">
+                                        <a href="/admins/patients/{{ patient.patient_id }}" class="text-blue-600 hover:text-blue-800">
+                                            View Details
+                                        </a>
+                                        <button class="text-blue-600 hover:text-blue-800" 
+                                                onclick="editPatient('{{ patient.patient_id }}')">
+                                            Edit
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-6 text-center text-gray-500">
+                No patients found that match your criteria.
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Edit Patient Modal -->
+    <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-medium">Edit Patient</h3>
+                <button onclick="hideEditModal()" class="text-gray-400 hover:text-gray-500">
+                    <span class="text-2xl">&times;</span>
+                </button>
+            </div>
+            
+            <form id="editForm" method="post" action="" class="mt-4">
+                <div class="mb-4">
+                    <label for="edit_name" class="block text-gray-700 font-medium mb-2">Name</label>
+                    <input type="text" id="edit_name" name="name" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="edit_dob" class="block text-gray-700 font-medium mb-2">Date of Birth</label>
+                    <input type="date" id="edit_dob" name="dob" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="edit_gender" class="block text-gray-700 font-medium mb-2">Gender</label>
+                    <select id="edit_gender" name="gender" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="edit_contact" class="block text-gray-700 font-medium mb-2">Contact</label>
+                    <input type="text" id="edit_contact" name="contact" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="edit_address" class="block text-gray-700 font-medium mb-2">Address</label>
+                    <textarea id="edit_address" name="address" rows="3" 
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="button" onclick="hideEditModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                        Update Patient
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    function editPatient(patientId) {
+        // Fetch patient data and populate the form
+        fetch(`/api/patients/${patientId}`)
+            .then(response => response.json())
+            .then(patient => {
+                document.getElementById('edit_name').value = patient.name;
+                if (patient.dob) {
+                    document.getElementById('edit_dob').value = patient.dob.split('T')[0];
+                }
+                document.getElementById('edit_gender').value = patient.gender || '';
+                document.getElementById('edit_contact').value = patient.contact || '';
+                document.getElementById('edit_address').value = patient.address || '';
+                
+                const form = document.getElementById('editForm');
+                form.action = `/api/patients/${patientId}`;
+                
+                document.getElementById('editModal').classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Error fetching patient details:', error);
+                alert('Failed to load patient details. Please try again.');
+            });
+    }
+    
+    function hideEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+</script>
+{% endblock %}
+{% endblock %}

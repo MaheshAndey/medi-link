@@ -27,7 +27,6 @@ async def get_current_user(
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             access_token = auth_header.split("Bearer ")[1]
-    print(access_token)
     if not access_token:
         return None
     
