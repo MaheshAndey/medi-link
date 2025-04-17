@@ -111,11 +111,9 @@
                 <select id="specialization" name="specialization_id" 
                         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Select Specialization</option>
-                    <option value="1">Cardiology</option>
-                    <option value="2">Dermatology</option>
-                    <option value="3">Neurology</option>
-                    <option value="4">Pediatrics</option>
-                    <option value="5">Orthopedics</option>
+                    {% for spec in specializations %}
+                        <option value="{{ spec.specialization_id }}">{{ spec.name }}</option>
+                    {% endfor %}
                 </select>
                 <p class="text-sm text-gray-500 mt-1">Note: Your account will be reviewed by an admin before activation.</p>
             </div>

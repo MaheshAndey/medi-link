@@ -81,7 +81,8 @@ async def logout(response: Response):
 
 @router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request, error: Optional[str] = None):
-    return templates.TemplateResponse("register.html", {"request": request, "error": error})
+    specializations = crud.get_specializations(db)
+    return templates.TemplateResponse("register.html", {"request": request, "error": error, "specializations": specializations})
 
 @router.post("/register/patient")
 async def register_patient(
@@ -97,10 +98,13 @@ async def register_patient(
 ):
     # Check if user already exists
     user = crud.get_user_by_email(db, email)
+    specializations = crud.get_specializations(db)
     if user:
         return templates.TemplateResponse(
             "register.html", 
-            {"request": request, "error": "Email already registered"}
+            {"request": request,
+              "error": "Email already registered",
+              "specializations": specializations }
         )
     
     # Create registration data
@@ -112,7 +116,7 @@ async def register_patient(
         except ValueError:
             return templates.TemplateResponse(
                 "register.html", 
-                {"request": request, "error": "Invalid date format"}
+                {"request": request, "error": "Invalid date format", "specializations": specializations }
             )
     
     registration_data = schemas.PatientRegistration(
@@ -144,10 +148,13 @@ async def register_doctor(
 ):
     # Check if user already exists
     user = crud.get_user_by_email(db, email)
+    specializations = crud.get_specializations(db)
     if user:
         return templates.TemplateResponse(
             "register.html", 
-            {"request": request, "error": "Email already registered"}
+            {"request": request, 
+             "error": "Email already registered", 
+             "specializations":specializations}
         )
     
     # Create registration data
