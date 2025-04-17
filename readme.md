@@ -1,7 +1,5 @@
 # 🚀 FastAPI App
 
-This FastAPI app uses environment variables stored in a `.env` file to manage secrets like database credentials.
-
 This guide works on **Windows (CMD & PowerShell), macOS, and Linux**.
 
 ---
