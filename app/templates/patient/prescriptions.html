@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Prescriptions - MediLink{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <h1 class="text-2xl font-semibold mb-6">My Prescriptions</h1>
+    
+    {% if health_records %}
+        {% set has_prescriptions = False %}
+        {% for record in health_records %}
+            {% if record.record_id in prescriptions_by_record and prescriptions_by_record[record.record_id] %}
+                {% set has_prescriptions = True %}
+            {% endif %}
+        {% endfor %}
+        
+        {% if has_prescriptions %}
+            <div class="space-y-6">
+                {% for record in health_records %}
+                    {% if record.record_id in prescriptions_by_record and prescriptions_by_record[record.record_id] %}
+                        <div class="bg-white shadow rounded-lg overflow-hidden">
+                            <div class="px-6 py-4 bg-green-600 text-white">
+                                <h2 class="font-semibold">Prescriptions from Dr. {{ record.doctor.name }}</h2>
+                                <p class="text-sm text-green-100">{{ record.created_at.strftime('%B %d, %Y') }}</p>
+                            </div>
+                            
+                            <div class="p-6">
+                                <div class="bg-gray-50 rounded-lg">
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-100">
+                                                <tr>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medication</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dosage</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instructions</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white divide-y divide-gray-200">
+                                                {% for prescription in prescriptions_by_record[record.record_id] %}
+                                                    <tr>
+                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                            <div class="font-medium text-gray-900">{{ prescription.medication_name }}</div>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                            <div class="text-sm text-gray-900">{{ prescription.dosage if prescription.dosage else 'Not specified' }}</div>
+                                                        </td>
+                                                        <td class="px-6 py-4">
+                                                            <div class="text-sm text-gray-900">{{ prescription.instructions if prescription.instructions else 'Not specified' }}</div>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                            <div class="text-sm text-gray-900">{{ prescription.duration if prescription.duration else 'Not specified' }}</div>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <!-- Diagnosis context -->
+                                <div class="mt-4">
+                                    <h3 class="font-medium text-gray-800 mb-2">Related Diagnosis</h3>
+                                    {% if record.diagnosis %}
+                                        <p class="text-gray-600">{{ record.diagnosis }}</p>
+                                    {% else %}
+                                        <p class="text-gray-400 italic">No diagnosis recorded</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-white shadow rounded-lg p-8 text-center">
+                <span class="inline-block p-3 rounded-full bg-green-100 text-green-500 mb-4">
+                    <i data-feather="clipboard" class="w-8 h-8"></i>
+                </span>
+                <h2 class="text-xl font-medium text-gray-900 mb-2">No Prescriptions Found</h2>
+                <p class="text-gray-600 mb-6">You don't have any prescriptions in our system yet.</p>
+                <a href="/patients/appointments" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                    Book an Appointment
+                </a>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="bg-white shadow rounded-lg p-8 text-center">
+            <span class="inline-block p-3 rounded-full bg-green-100 text-green-500 mb-4">
+                <i data-feather="clipboard" class="w-8 h-8"></i>
+            </span>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">No Prescriptions Found</h2>
+            <p class="text-gray-600 mb-6">You don't have any prescriptions in our system yet.</p>
+            <a href="/patients/appointments" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                Book an Appointment
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

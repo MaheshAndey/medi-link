@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block title %}Health Record - MediLink{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <div class="mb-6">
+        <a href="/doctors/patients/{{ health_record.patient_id }}" class="text-blue-600 hover:text-blue-800 flex items-center">
+            <i data-feather="arrow-left" class="h-4 w-4 mr-1"></i> Back to Patient
+        </a>
+    </div>
+    
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold">Health Record</h1>
+        <div class="text-sm text-gray-500">
+            {{ health_record.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+        </div>
+    </div>
+    
+    <!-- Patient Quick Info -->
+    <div class="bg-blue-50 rounded-lg p-4 mb-6 flex justify-between items-center">
+        <div>
+            <h2 class="font-medium text-blue-900">Patient: {{ health_record.patient.name }}</h2>
+            <p class="text-blue-700 text-sm">
+                {% if health_record.patient.dob %}
+                    {{ health_record.patient.dob.strftime('%B %d, %Y') }} 
+                    ({{ (now().date() - health_record.patient.dob).days // 365 }} years)
+                {% endif %}
+                {% if health_record.patient.gender %}
+                    | {{ health_record.patient.gender | title }}
+                {% endif %}
+            </p>
+        </div>
+        {% if health_record.appointment %}
+            <div class="text-right">
+                <p class="text-sm text-blue-700">Appointment:</p>
+                <p class="font-medium text-blue-900">{{ health_record.appointment.appointment_time.strftime('%B %d, %Y at %I:%M %p') }}</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Health Record Details -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-green-600 text-white">
+            <h2 class="font-semibold">Medical Details</h2>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h3 class="font-medium text-gray-800 mb-2">Symptoms</h3>
+                    <div class="bg-gray-50 p-4 rounded-lg min-h-[100px]">
+                        {% if health_record.symptoms %}
+                            <p class="text-gray-700 whitespace-pre-line">{{ health_record.symptoms }}</p>
+                        {% else %}
+                            <p class="text-gray-400 italic">No symptoms recorded</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-800 mb-2">Diagnosis</h3>
+                    <div class="bg-gray-50 p-4 rounded-lg min-h-[100px]">
+                        {% if health_record.diagnosis %}
+                            <p class="text-gray-700 whitespace-pre-line">{{ health_record.diagnosis }}</p>
+                        {% else %}
+                            <p class="text-gray-400 italic">No diagnosis recorded</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <h3 class="font-medium text-gray-800 mb-2">Notes</h3>
+                <div class="bg-gray-50 p-4 rounded-lg min-h-[100px]">
+                    {% if health_record.notes %}
+                        <p class="text-gray-700 whitespace-pre-line">{{ health_record.notes }}</p>
+                    {% else %}
+                        <p class="text-gray-400 italic">No notes recorded</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Update Health Record Form -->
+            <details class="mt-4">
+                <summary class="cursor-pointer text-blue-600 hover:text-blue-800">Update Record</summary>
+                <form method="post" action="/api/health-records/{{ health_record.record_id }}" class="mt-4 bg-gray-50 p-4 rounded-lg">
+                    <div class="mb-4">
+                        <label for="symptoms" class="block text-gray-700 font-medium mb-2">Symptoms</label>
+                        <textarea id="symptoms" name="symptoms" rows="3" 
+                                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">{{ health_record.symptoms }}</textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="diagnosis" class="block text-gray-700 font-medium mb-2">Diagnosis</label>
+                        <textarea id="diagnosis" name="diagnosis" rows="3" 
+                                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">{{ health_record.diagnosis }}</textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="notes" class="block text-gray-700 font-medium mb-2">Notes</label>
+                        <textarea id="notes" name="notes" rows="3" 
+                                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">{{ health_record.notes }}</textarea>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                            Update Record
+                        </button>
+                    </div>
+                </form>
+            </details>
+        </div>
+    </div>
+    
+    <!-- Prescriptions -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-yellow-600 text-white flex justify-between items-center">
+            <h2 class="font-semibold">Prescriptions</h2>
+            <button class="text-sm bg-white text-yellow-600 px-3 py-1 rounded hover:bg-yellow-100"
+                    onclick="showPrescriptionModal()">
+                Add Prescription
+            </button>
+        </div>
+        
+        <div class="p-6">
+            {% if prescriptions %}
+                <div class="bg-gray-50 rounded-lg overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medication</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dosage</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instructions</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for prescription in prescriptions %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="font-medium text-gray-900">{{ prescription.medication_name }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ prescription.dosage if prescription.dosage else 'Not specified' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">{{ prescription.instructions if prescription.instructions else 'Not specified' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ prescription.duration if prescription.duration else 'Not specified' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <button class="text-red-600 hover:text-red-800" 
+                                                onclick="deletePrescription({{ prescription.prescription_id }})">
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center text-gray-500 py-4">
+                    No prescriptions have been added to this record.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Lab Tests -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 bg-purple-600 text-white flex justify-between items-center">
+            <h2 class="font-semibold">Lab Tests</h2>
+            <button class="text-sm bg-white text-purple-600 px-3 py-1 rounded hover:bg-purple-100"
+                    onclick="showTestModal()">
+                Order Test
+            </button>
+        </div>
+        
+        <div class="p-6">
+            {% if tests %}
+                <div class="bg-gray-50 rounded-lg overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Result</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Report</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for test in tests %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="font-medium text-gray-900">{{ test.test_name }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            {% if test.status == 'ordered' %} bg-yellow-100 text-yellow-800 
+                                            {% elif test.status == 'in_progress' %} bg-blue-100 text-blue-800 
+                                            {% elif test.status == 'completed' %} bg-green-100 text-green-800 
+                                            {% elif test.status == 'cancelled' %} bg-red-100 text-red-800 
+                                            {% endif %}">
+                                            {{ test.status | replace('_', ' ') | title }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">
+                                            {% if test.result %}
+                                                {{ test.result }}
+                                            {% else %}
+                                                <span class="text-gray-500">Not available</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if test.report_url %}
+                                            <a href="{{ test.report_url }}" target="_blank" class="text-blue-600 hover:text-blue-800">
+                                                View Report
+                                            </a>
+                                        {% else %}
+                                            <span class="text-gray-500">Not available</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if test.status == 'ordered' %}
+                                            <button class="text-blue-600 hover:text-blue-800" 
+                                                    onclick="updateTestStatus({{ test.test_id }}, 'in_progress')">
+                                                Update to In Progress
+                                            </button>
+                                        {% elif test.status == 'in_progress' %}
+                                            <button class="text-green-600 hover:text-green-800" 
+                                                    onclick="showUpdateTestModal({{ test.test_id }})">
+                                                Add Results
+                                            </button>
+                                        {% else %}
+                                            <span class="text-gray-400">No actions</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center text-gray-500 py-4">
+                    No lab tests have been ordered for this record.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Prescription Modal -->
+    <div id="prescriptionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-medium">Add Prescription</h3>
+                <button onclick="hidePrescriptionModal()" class="text-gray-400 hover:text-gray-500">
+                    <span class="text-2xl">&times;</span>
+                </button>
+            </div>
+            
+            <form method="post" action="/doctors/prescriptions/create" class="mt-4">
+                <input type="hidden" name="record_id" value="{{ health_record.record_id }}">
+                
+                <div class="mb-4">
+                    <label for="medication_name" class="block text-gray-700 font-medium mb-2">Medication Name</label>
+                    <input type="text" id="medication_name" name="medication_name" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="dosage" class="block text-gray-700 font-medium mb-2">Dosage</label>
+                    <input type="text" id="dosage" name="dosage"
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    <p class="text-xs text-gray-500 mt-1">E.g., "500mg twice daily" or "5ml every 6 hours"</p>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="instructions" class="block text-gray-700 font-medium mb-2">Instructions</label>
+                    <textarea id="instructions" name="instructions" rows="2"
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">E.g., "Take with food" or "Take before bedtime"</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="duration" class="block text-gray-700 font-medium mb-2">Duration</label>
+                    <input type="text" id="duration" name="duration"
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    <p class="text-xs text-gray-500 mt-1">E.g., "7 days" or "Until symptoms resolve"</p>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="button" onclick="hidePrescriptionModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-yellow-600 text-white px-4 py-2 rounded-lg">
+                        Add Prescription
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Test Modal -->
+    <div id="testModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-medium">Order Lab Test</h3>
+                <button onclick="hideTestModal()" class="text-gray-400 hover:text-gray-500">
+                    <span class="text-2xl">&times;</span>
+                </button>
+            </div>
+            
+            <form method="post" action="/doctors/tests/create" class="mt-4">
+                <input type="hidden" name="record_id" value="{{ health_record.record_id }}">
+                
+                <div class="mb-6">
+                    <label for="test_name" class="block text-gray-700 font-medium mb-2">Test Name</label>
+                    <input type="text" id="test_name" name="test_name" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <p class="text-xs text-gray-500 mt-1">E.g., "Complete Blood Count" or "Chest X-Ray"</p>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="button" onclick="hideTestModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-lg">
+                        Order Test
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Update Test Modal -->
+    <div id="updateTestModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-medium">Update Test Results</h3>
+                <button onclick="hideUpdateTestModal()" class="text-gray-400 hover:text-gray-500">
+                    <span class="text-2xl">&times;</span>
+                </button>
+            </div>
+            
+            <form id="updateTestForm" method="post" action="" class="mt-4">
+                <input type="hidden" name="status" value="completed">
+                
+                <div class="mb-4">
+                    <label for="result" class="block text-gray-700 font-medium mb-2">Test Results</label>
+                    <textarea id="result" name="result" rows="4" required
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="report_url" class="block text-gray-700 font-medium mb-2">Report URL (Optional)</label>
+                    <input type="url" id="report_url" name="report_url"
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <p class="text-xs text-gray-500 mt-1">Link to detailed report if available</p>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="button" onclick="hideUpdateTestModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-lg">
+                        Update Results
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    function showPrescriptionModal() {
+        document.getElementById('prescriptionModal').classList.remove('hidden');
+    }
+    
+    function hidePrescriptionModal() {
+        document.getElementById('prescriptionModal').classList.add('hidden');
+    }
+    
+    function showTestModal() {
+        document.getElementById('testModal').classList.remove('hidden');
+    }
+    
+    function hideTestModal() {
+        document.getElementById('testModal').classList.add('hidden');
+    }
+    
+    function showUpdateTestModal(testId) {
+        const form = document.getElementById('updateTestForm');
+        form.action = `/api/tests/${testId}`;
+        
+        document.getElementById('updateTestModal').classList.remove('hidden');
+    }
+    
+    function hideUpdateTestModal() {
+        document.getElementById('updateTestModal').classList.add('hidden');
+    }
+    
+    function updateTestStatus(testId, status) {
+        if (confirm('Update test status to ' + status.replace('_', ' ') + '?')) {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = `/api/tests/${testId}`;
+            
+            const statusInput = document.createElement('input');
+            statusInput.type = 'hidden';
+            statusInput.name = 'status';
+            statusInput.value = status;
+            
+            form.appendChild(statusInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+    
+    function deletePrescription(prescriptionId) {
+        if (confirm('Are you sure you want to delete this prescription?')) {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = `/api/prescriptions/${prescriptionId}`;
+            
+            const methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'DELETE';
+            
+            form.appendChild(methodInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
+{% endblock %}
+{% endblock %}

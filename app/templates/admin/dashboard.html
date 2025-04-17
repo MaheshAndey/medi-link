@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - MediLink{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <h1 class="text-2xl font-semibold mb-6">Admin Dashboard</h1>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500">Total Users</p>
+                    <h2 class="text-3xl font-bold text-gray-800">{{ user_count }}</h2>
+                </div>
+                <div class="rounded-full bg-blue-100 p-3">
+                    <span class="text-blue-600" data-feather="users"></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500">Patients</p>
+                    <h2 class="text-3xl font-bold text-gray-800">{{ patient_count }}</h2>
+                </div>
+                <div class="rounded-full bg-green-100 p-3">
+                    <span class="text-green-600" data-feather="user"></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500">Doctors</p>
+                    <h2 class="text-3xl font-bold text-gray-800">{{ doctor_count }}</h2>
+                </div>
+                <div class="rounded-full bg-purple-100 p-3">
+                    <span class="text-purple-600" data-feather="user-plus"></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500">Appointments</p>
+                    <h2 class="text-3xl font-bold text-gray-800">{{ appointment_count }}</h2>
+                </div>
+                <div class="rounded-full bg-yellow-100 p-3">
+                    <span class="text-yellow-600" data-feather="calendar"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
+            <h2 class="font-semibold">Recent Appointments</h2>
+            <a href="/admin/appointments" class="text-sm bg-white text-blue-600 px-3 py-1 rounded hover:bg-blue-100">View All</a>
+        </div>
+        
+        <div class="p-6">
+            {% if recent_appointments %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for appointment in recent_appointments %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="font-medium text-gray-900">{{ appointment.patient.name }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="font-medium text-gray-900">Dr. {{ appointment.doctor.name }}</div>
+                                        <div class="text-sm text-gray-500">{{ appointment.doctor.specialization.name if appointment.doctor.specialization else 'General' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ appointment.appointment_time.strftime('%b %d, %Y') }}</div>
+                                        <div class="text-sm text-gray-500">{{ appointment.appointment_time.strftime('%I:%M %p') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            {% if appointment.status == 'scheduled' %} bg-yellow-100 text-yellow-800 
+                                            {% elif appointment.status == 'confirmed' %} bg-green-100 text-green-800 
+                                            {% elif appointment.status == 'completed' %} bg-blue-100 text-blue-800 
+                                            {% elif appointment.status == 'cancelled' %} bg-red-100 text-red-800 
+                                            {% elif appointment.status == 'no_show' %} bg-gray-100 text-gray-800 
+                                            {% endif %}">
+                                            {{ appointment.status | title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-gray-500 text-center">No recent appointments</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Admin Information -->
+    <div class="bg-white shadow rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Admin Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-gray-600 mb-1">Name</p>
+                <p class="font-medium">{{ admin.name }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Email</p>
+                <p class="font-medium">{{ user.email }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Contact</p>
+                <p class="font-medium">{{ admin.contact if admin.contact else 'Not provided' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Role</p>
+                <p class="font-medium">System Administrator</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Links -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a href="/admins/users" class="bg-blue-100 hover:bg-blue-200 p-6 rounded-lg flex items-center justify-between">
+            <div>
+                <h3 class="font-semibold text-blue-800">Manage Users</h3>
+                <p class="text-blue-600 text-sm mt-1">Add, edit or remove users</p>
+            </div>
+            <span class="text-blue-600" data-feather="users"></span>
+        </a>
+        
+        <a href="/admins/doctors" class="bg-purple-100 hover:bg-purple-200 p-6 rounded-lg flex items-center justify-between">
+            <div>
+                <h3 class="font-semibold text-purple-800">Manage Doctors</h3>
+                <p class="text-purple-600 text-sm mt-1">View and assign specializations</p>
+            </div>
+            <span class="text-purple-600" data-feather="user-plus"></span>
+        </a>
+        
+        <a href="/admins/specializations" class="bg-green-100 hover:bg-green-200 p-6 rounded-lg flex items-center justify-between">
+            <div>
+                <h3 class="font-semibold text-green-800">Specializations</h3>
+                <p class="text-green-600 text-sm mt-1">Manage doctor specializations</p>
+            </div>
+            <span class="text-green-600" data-feather="tag"></span>
+        </a>
+    </div>
+</div>
+{% endblock %}

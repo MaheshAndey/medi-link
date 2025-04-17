@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Billing - MediLink{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <h1 class="text-2xl font-semibold mb-6">My Billing</h1>
+    
+    {% if billings %}
+        <!-- Billing summary -->
+        <div class="bg-white shadow rounded-lg p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                <div class="p-4 rounded-lg bg-blue-50">
+                    <p class="text-sm text-gray-600">Total Bills</p>
+                    <p class="text-2xl font-bold text-blue-600">{{ billings|length }}</p>
+                </div>
+                <div class="p-4 rounded-lg bg-yellow-50">
+                    <p class="text-sm text-gray-600">Pending</p>
+                    <p class="text-2xl font-bold text-yellow-600">{{ billings|selectattr('status', 'equalto', 'pending')|list|length }}</p>
+                </div>
+                <div class="p-4 rounded-lg bg-red-50">
+                    <p class="text-sm text-gray-600">Overdue</p>
+                    <p class="text-2xl font-bold text-red-600">{{ billings|selectattr('status', 'equalto', 'overdue')|list|length }}</p>
+                </div>
+                <div class="p-4 rounded-lg bg-green-50">
+                    <p class="text-sm text-gray-600">Paid</p>
+                    <p class="text-2xl font-bold text-green-600">{{ billings|selectattr('status', 'equalto', 'paid')|list|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Billing list -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 bg-gray-100 border-b">
+                <h2 class="font-semibold">Billing History</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bill #</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appointment</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for bill in billings %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ bill.billing_id }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ bill.created_at.strftime('%b %d, %Y') }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {% if bill.appointment %}
+                                            {{ bill.appointment.appointment_time.strftime('%b %d, %Y') }}
+                                            <div class="text-xs text-gray-500">Dr. {{ bill.appointment.doctor.name }}</div>
+                                        {% else %}
+                                            Not specified
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">${{ "%.2f"|format(bill.amount) }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if bill.status == 'pending' %} bg-yellow-100 text-yellow-800 
+                                        {% elif bill.status == 'paid' %} bg-green-100 text-green-800 
+                                        {% elif bill.status == 'overdue' %} bg-red-100 text-red-800 
+                                        {% elif bill.status == 'cancelled' %} bg-gray-100 text-gray-800 
+                                        {% endif %}">
+                                        {{ bill.status | title }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {{ bill.payment_method if bill.payment_method else 'Not paid' }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if bill.status == 'pending' or bill.status == 'overdue' %}
+                                        <button class="text-blue-600 hover:text-blue-900" onclick="showPaymentModal({{ bill.billing_id }}, {{ bill.amount }})">
+                                            Pay Now
+                                        </button>
+                                    {% else %}
+                                        <span class="text-gray-400">No actions</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Payment Modal -->
+        <div id="paymentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden" x-data="{ amount: 0, billingId: 0 }">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <h3 class="text-lg font-medium">Make Payment</h3>
+                    <button onclick="hidePaymentModal()" class="text-gray-400 hover:text-gray-500">
+                        <span class="text-2xl">&times;</span>
+                    </button>
+                </div>
+                
+                <form id="paymentForm" method="post" action="" class="mt-4">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Amount to Pay</label>
+                        <div class="text-2xl font-bold text-gray-900">$<span x-text="amount.toFixed(2)"></span></div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="payment_method" class="block text-gray-700 font-medium mb-2">Payment Method</label>
+                        <select id="payment_method" name="payment_method" required
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select Payment Method</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Debit Card">Debit Card</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </div>
+                    
+                    <input type="hidden" name="status" value="paid">
+                    
+                    <div class="flex justify-end mt-6">
+                        <button type="button" onclick="hidePaymentModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Complete Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div class="bg-white shadow rounded-lg p-8 text-center">
+            <span class="inline-block p-3 rounded-full bg-blue-100 text-blue-500 mb-4">
+                <i data-feather="dollar-sign" class="w-8 h-8"></i>
+            </span>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">No Billing Records Found</h2>
+            <p class="text-gray-600 mb-6">You don't have any billing records in our system yet.</p>
+        </div>
+    {% endif %}
+</div>
+
+{% block scripts %}
+<script>
+    function showPaymentModal(billingId, amount) {
+        const modal = document.getElementById('paymentModal');
+        const form = document.getElementById('paymentForm');
+        form.action = `/api/billing/${billingId}`;
+        
+        modal.__x.$data.billingId = billingId;
+        modal.__x.$data.amount = amount;
+        modal.classList.remove('hidden');
+    }
+    
+    function hidePaymentModal() {
+        document.getElementById('paymentModal').classList.add('hidden');
+    }
+</script>
+{% endblock %}
+{% endblock %}

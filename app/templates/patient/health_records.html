@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Health Records - MediLink{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <h1 class="text-2xl font-semibold mb-6">My Health Records</h1>
+    
+    {% if health_records %}
+        <div class="space-y-6">
+            {% for record in health_records %}
+                <div class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
+                        <div>
+                            <h2 class="font-semibold">Record from Dr. {{ record.doctor.name }}</h2>
+                            <p class="text-sm text-blue-100">{{ record.created_at.strftime('%B %d, %Y') }}</p>
+                        </div>
+                        <span class="text-sm bg-white text-blue-600 px-3 py-1 rounded">
+                            {% if record.appointment %}
+                                Appointment: {{ record.appointment.appointment_time.strftime('%B %d, %Y') }}
+                            {% else %}
+                                Direct Consultation
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Symptoms and Diagnosis -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <h3 class="font-medium text-gray-800 mb-2">Symptoms</h3>
+                                {% if record.symptoms %}
+                                    <p class="text-gray-600">{{ record.symptoms }}</p>
+                                {% else %}
+                                    <p class="text-gray-400 italic">No symptoms recorded</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-800 mb-2">Diagnosis</h3>
+                                {% if record.diagnosis %}
+                                    <p class="text-gray-600">{{ record.diagnosis }}</p>
+                                {% else %}
+                                    <p class="text-gray-400 italic">No diagnosis recorded</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div class="mb-6">
+                            <h3 class="font-medium text-gray-800 mb-2">Doctor's Notes</h3>
+                            {% if record.notes %}
+                                <p class="text-gray-600">{{ record.notes }}</p>
+                            {% else %}
+                                <p class="text-gray-400 italic">No notes recorded</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Prescriptions -->
+                        <div class="mb-6">
+                            <h3 class="font-medium text-gray-800 mb-2">Prescriptions</h3>
+                            {% if record.prescriptions %}
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <ul class="divide-y divide-gray-200">
+                                        {% for prescription in record.prescriptions %}
+                                            <li class="py-3 flex justify-between">
+                                                <div>
+                                                    <div class="font-medium">{{ prescription.medication_name }}</div>
+                                                    <div class="text-sm text-gray-500">{{ prescription.dosage }}</div>
+                                                    <div class="text-sm text-gray-500">{{ prescription.instructions }}</div>
+                                                </div>
+                                                <div class="text-sm text-gray-500">Duration: {{ prescription.duration }}</div>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% else %}
+                                <p class="text-gray-400 italic">No prescriptions for this record</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Tests -->
+                        <div>
+                            <h3 class="font-medium text-gray-800 mb-2">Lab Tests</h3>
+                            {% if record.tests %}
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <ul class="divide-y divide-gray-200">
+                                        {% for test in record.tests %}
+                                            <li class="py-3 flex justify-between">
+                                                <div>
+                                                    <div class="font-medium">{{ test.test_name }}</div>
+                                                    {% if test.result %}
+                                                        <div class="text-sm text-gray-600">Result: {{ test.result }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div>
+                                                    <span class="px-2 py-1 rounded text-xs font-medium
+                                                        {% if test.status == 'ordered' %} bg-yellow-100 text-yellow-800
+                                                        {% elif test.status == 'in_progress' %} bg-blue-100 text-blue-800
+                                                        {% elif test.status == 'completed' %} bg-green-100 text-green-800
+                                                        {% elif test.status == 'cancelled' %} bg-red-100 text-red-800
+                                                        {% endif %}">
+                                                        {{ test.status | replace('_', ' ') | title }}
+                                                    </span>
+                                                    {% if test.report_url %}
+                                                        <a href="{{ test.report_url }}" class="ml-2 text-blue-600 hover:text-blue-800 text-sm">View Report</a>
+                                                    {% endif %}
+                                                </div>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% else %}
+                                <p class="text-gray-400 italic">No tests ordered for this record</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white shadow rounded-lg p-8 text-center">
+            <span class="inline-block p-3 rounded-full bg-blue-100 text-blue-500 mb-4">
+                <i data-feather="file-text" class="w-8 h-8"></i>
+            </span>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">No Health Records Found</h2>
+            <p class="text-gray-600 mb-6">You don't have any health records in our system yet.</p>
+            <a href="/patients/appointments" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                Book an Appointment
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

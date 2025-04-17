@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Dashboard - MediLink{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <h1 class="text-2xl font-semibold mb-6">Patient Dashboard</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Upcoming Appointments -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
+                <h2 class="font-semibold text-lg">Upcoming Appointments</h2>
+                <a href="/patients/appointments" class="text-sm bg-white text-blue-600 px-3 py-1 rounded hover:bg-blue-100">View All</a>
+            </div>
+            <div class="p-6">
+                {% if appointments %}
+                    {% for appointment in appointments %}
+                        {% if appointment.status != 'completed' and appointment.status != 'cancelled' %}
+                            <div class="mb-4 pb-4 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
+                                <div class="flex justify-between">
+                                    <span class="font-medium">Dr. {{ appointment.doctor.name }}</span>
+                                    <span class="text-sm px-2 py-1 rounded {% if appointment.status == 'scheduled' %}bg-yellow-100 text-yellow-800{% elif appointment.status == 'confirmed' %}bg-green-100 text-green-800{% endif %}">
+                                        {{ appointment.status | title }}
+                                    </span>
+                                </div>
+                                <div class="text-gray-600 text-sm mt-1">
+                                    {{ appointment.appointment_time.strftime('%B %d, %Y at %I:%M %p') }}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if not appointments|selectattr('status', 'in', ['scheduled', 'confirmed'])|list %}
+                        <p class="text-gray-500 text-center">No upcoming appointments</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-gray-500 text-center">No upcoming appointments</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent Health Records -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 bg-green-600 text-white flex justify-between items-center">
+                <h2 class="font-semibold text-lg">Recent Health Records</h2>
+                <a href="/patients/health-records" class="text-sm bg-white text-green-600 px-3 py-1 rounded hover:bg-green-100">View All</a>
+            </div>
+            <div class="p-6">
+                {% if health_records %}
+                    {% for record in health_records[:3] %}
+                        <div class="mb-4 pb-4 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
+                            <div class="flex justify-between">
+                                <span class="font-medium">Dr. {{ record.doctor.name }}</span>
+                                <span class="text-gray-500 text-sm">{{ record.created_at.strftime('%B %d, %Y') }}</span>
+                            </div>
+                            <div class="text-gray-600 mt-1">
+                                {% if record.diagnosis %}
+                                    <p class="text-sm">{{ record.diagnosis }}</p>
+                                {% else %}
+                                    <p class="text-sm text-gray-500">No diagnosis recorded</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500 text-center">No health records found</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Outstanding Bills -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 bg-red-600 text-white flex justify-between items-center">
+                <h2 class="font-semibold text-lg">Outstanding Bills</h2>
+                <a href="/patients/billing" class="text-sm bg-white text-red-600 px-3 py-1 rounded hover:bg-red-100">View All</a>
+            </div>
+            <div class="p-6">
+                {% if billings %}
+                    {% for bill in billings %}
+                        {% if bill.status == 'pending' or bill.status == 'overdue' %}
+                            <div class="mb-4 pb-4 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
+                                <div class="flex justify-between">
+                                    <span class="font-medium">Bill #{{ bill.billing_id }}</span>
+                                    <span class="text-sm px-2 py-1 rounded {% if bill.status == 'pending' %}bg-yellow-100 text-yellow-800{% elif bill.status == 'overdue' %}bg-red-100 text-red-800{% endif %}">
+                                        {{ bill.status | title }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between mt-1">
+                                    <span class="text-gray-600 text-sm">
+                                        {{ bill.created_at.strftime('%B %d, %Y') }}
+                                    </span>
+                                    <span class="font-medium">${{ "%.2f"|format(bill.amount) }}</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if not billings|selectattr('status', 'in', ['pending', 'overdue'])|list %}
+                        <p class="text-gray-500 text-center">No outstanding bills</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-gray-500 text-center">No outstanding bills</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Patient Information -->
+    <div class="bg-white shadow rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Personal Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-gray-600 mb-1">Name</p>
+                <p class="font-medium">{{ patient.name }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Email</p>
+                <p class="font-medium">{{ user.email }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Date of Birth</p>
+                <p class="font-medium">{{ patient.dob.strftime('%B %d, %Y') if patient.dob else 'Not provided' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Gender</p>
+                <p class="font-medium">{{ patient.gender | title if patient.gender else 'Not provided' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Contact</p>
+                <p class="font-medium">{{ patient.contact if patient.contact else 'Not provided' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 mb-1">Address</p>
+                <p class="font-medium">{{ patient.address if patient.address else 'Not provided' }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Links -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a href="/patients/appointments" class="bg-blue-100 hover:bg-blue-200 p-6 rounded-lg flex items-center justify-between">
+            <div>
+                <h3 class="font-semibold text-blue-800">Book Appointment</h3>
+                <p class="text-blue-600 text-sm mt-1">Schedule your next visit</p>
+            </div>
+            <span class="text-blue-600" data-feather="calendar"></span>
+        </a>
+        
+        <a href="/patients/prescriptions" class="bg-green-100 hover:bg-green-200 p-6 rounded-lg flex items-center justify-between">
+            <div>
+                <h3 class="font-semibold text-green-800">View Prescriptions</h3>
+                <p class="text-green-600 text-sm mt-1">Access your medications</p>
+            </div>
+            <span class="text-green-600" data-feather="file-text"></span>
+        </a>
+        
+        <a href="/patients/tests" class="bg-purple-100 hover:bg-purple-200 p-6 rounded-lg flex items-center justify-between">
+            <div>
+                <h3 class="font-semibold text-purple-800">Test Results</h3>
+                <p class="text-purple-600 text-sm mt-1">Check your lab results</p>
+            </div>
+            <span class="text-purple-600" data-feather="activity"></span>
+        </a>
+    </div>
+</div>
+{% endblock %}

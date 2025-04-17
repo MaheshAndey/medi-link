@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MediLink Healthcare System{% endblock %}</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js via CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Feather Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-50 h-screen flex flex-col">
+    {% if user %}
+        {% include "components/navbar.html" %}
+        
+        <div class="flex flex-1 overflow-hidden">
+            {% include "components/sidebar.html" %}
+            
+            <main class="flex-1 overflow-y-auto p-6">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    {% else %}
+        <div class="min-h-screen flex items-center justify-center">
+            <main class="w-full max-w-md">
+                {% block auth_content %}{% endblock %}
+            </main>
+        </div>
+    {% endif %}
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Initialize feather icons
+            feather.replace();
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

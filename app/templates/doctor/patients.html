@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Patients - MediLink{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold">My Patients</h1>
+        <div>
+            <form method="get" action="/doctors/patients" class="flex items-center space-x-2">
+                <input type="text" name="search" value="{{ search }}" placeholder="Search patients..." 
+                       class="border rounded-lg p-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    Search
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    {% if patients %}
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age & Gender</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Visit</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for patient in patients %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-medium text-gray-900">{{ patient.name }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {% if patient.dob %}
+                                            {{ (now().date() - patient.dob).days // 365 }} years
+                                        {% else %}
+                                            Age unknown
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ patient.gender | title if patient.gender else 'Not specified' }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ patient.contact if patient.contact else 'Not provided' }}</div>
+                                    <div class="text-sm text-gray-500">{{ patient.user.email }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {% if patient.appointments|length > 0 %}
+                                            {% set last_appt = patient.appointments|sort(attribute='appointment_time', reverse=True)|first %}
+                                            {{ last_appt.appointment_time.strftime('%b %d, %Y') }}
+                                        {% else %}
+                                            No visits yet
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <a href="/doctors/patients/{{ patient.patient_id }}" class="text-blue-600 hover:text-blue-800">View Details</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="bg-white shadow rounded-lg p-8 text-center">
+            <span class="inline-block p-3 rounded-full bg-blue-100 text-blue-500 mb-4">
+                <i data-feather="users" class="w-8 h-8"></i>
+            </span>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">No Patients Found</h2>
+            {% if search %}
+                <p class="text-gray-600 mb-6">No patients matching "{{ search }}".</p>
+                <a href="/doctors/patients" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    View All Patients
+                </a>
+            {% else %}
+                <p class="text-gray-600 mb-6">You haven't seen any patients yet.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
