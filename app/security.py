@@ -11,7 +11,7 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY",
                        "medilink_secret_key_change_in_production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

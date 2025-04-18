@@ -70,14 +70,13 @@ def doctor_appointments(
         raise HTTPException(status_code=404, detail="Doctor profile not found")
     
     # Get appointments for specific date or today
-    target_date = None
-    if date:
-        try:
-            target_date = datetime.strptime(date, "%Y-%m-%d").date()
-        except ValueError:
-            target_date = datetime.now().date()
-    else:
-        target_date = datetime.now().date()
+    today = datetime.now().date()
+    try:
+        target_date = datetime.strptime(date, "%Y-%m-%d").date() if date else today
+        if target_date < today:
+            target_date = today  # Prevent selection of past dates
+    except ValueError:
+        target_date = today
     
     target_start = datetime.combine(target_date, datetime.min.time())
     target_end = datetime.combine(target_date, datetime.max.time())
@@ -102,7 +101,9 @@ def doctor_appointments(
         "appointments": appointments,
         "schedules": schedules,
         "selected_date": target_date.strftime("%Y-%m-%d"),
-        "day_of_week": day_of_week
+        "day_of_week": day_of_week,
+        "today": today.strftime("%Y-%m-%d"),
+        "today_date": today
     })
 
 @router.post("/doctors/appointments/{appointment_id}/update")
@@ -432,6 +433,7 @@ def doctor_schedule(
 
 @router.post("/doctors/schedule/create")
 def create_schedule(
+    request: Request,
     day: str = Form(...),
     start_time: str = Form(...),
     end_time: str = Form(...),
@@ -440,18 +442,35 @@ def create_schedule(
     current_user: models.User = Depends(check_doctor_role)
 ):
     doctor = crud.get_doctor_by_user_id(db, current_user.user_id)
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
     if not doctor:
-        raise HTTPException(status_code=404, detail="Doctor profile not found")
-    
-    # Parse times
+        return templates.TemplateResponse("doctor/schedule.html", {
+            "request": request,
+            "error": "Doctor profile not found",
+            "schedules": [],
+            "days": days,
+            "user": current_user
+        })
+
     from datetime import datetime
     try:
         start = datetime.strptime(start_time, "%H:%M").time()
         end = datetime.strptime(end_time, "%H:%M").time()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid time format")
-    
-    # Create schedule
+
+        if start >= end:
+            raise ValueError("Start time must be before end time")
+
+    except ValueError as e:
+        return templates.TemplateResponse("doctor/schedule.html", {
+            "request": request,
+            "error": str(e),
+            "schedules": crud.get_doctor_schedules(db, doctor.doctor_id),
+            "days": days,
+            "user": current_user
+        })
+
+    # Save the schedule
     schedule_data = schemas.DoctorScheduleCreate(
         doctor_id=doctor.doctor_id,
         day=day.lower(),
@@ -459,9 +478,8 @@ def create_schedule(
         end_time=end,
         is_available=is_available
     )
-    
-    schedule = crud.create_schedule(db, schedule_data)
-    
+    crud.create_schedule(db, schedule_data)
+
     return RedirectResponse(url="/doctors/schedule", status_code=303)
 
 # Routes requiring admin role

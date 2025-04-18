@@ -245,7 +245,9 @@ def admin_appointments(
     doctor_id: Optional[int] = None,
     status: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(check_admin_role)
+    current_user: models.User = Depends(check_admin_role),
+    appointment_date: Optional[str] = Form(None),
+    appointment_time: Optional[str] = Form(None)
 ):
     admin = crud.get_admin_by_user_id(db, current_user.user_id)
     if not admin:
@@ -281,9 +283,18 @@ def admin_appointments(
     if status:
         query = query.filter(models.Appointment.status == status)
     
+    #Combine date and time into a datetime object
+    if appointment_date and appointment_time:
+        try:
+            appointment_datetime = datetime.strptime(f"{appointment_date} {appointment_time}", "%Y-%m-%d %H:%M")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date or time format")
+
     # Get results sorted by appointment time
     appointments = query.order_by(models.Appointment.appointment_time).all()
     
+    patients = crud.get_patients(db)
+
     return templates.TemplateResponse("admin/appointments.html", {
         "request": request,
         "user": current_user,
@@ -294,7 +305,8 @@ def admin_appointments(
         "date_to": date_to,
         "doctor_id": doctor_id,
         "status": status,
-        "now": datetime.now
+        "now": datetime.now,
+        "patients": patients
     })
 
 @router.get("/admins/users", response_class=HTMLResponse)
@@ -315,12 +327,15 @@ def admin_users(
     
     users = query.all()
     
+    specializations = crud.get_specializations(db)
+
     return templates.TemplateResponse("admin/users.html", {
         "request": request,
         "user": current_user,
         "admin": admin,
         "users": users,
-        "search": search
+        "search": search,
+        "specializations": specializations
     })
 
 @router.post("/admins/users/create")
