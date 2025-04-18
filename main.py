@@ -1,10 +1,11 @@
 import os
 import logging
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, status
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from dotenv import load_dotenv
 
 from app.database import engine, Base
@@ -29,6 +30,20 @@ init_db()
 
 app = FastAPI(title="MediLink Healthcare Management System")
 
+# Create middleware for handling session expiration
+class SessionExpirationMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        
+        # If response is 401 Unauthorized and not an API route, redirect to login with expired=true
+        if response.status_code == status.HTTP_401_UNAUTHORIZED:
+            path = request.url.path
+            # Skip API routes (typically starting with /api)
+            if not path.startswith("/api/") and not path == "/login":
+                return RedirectResponse(url="/login?expired=true", status_code=303)
+        
+        return response
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -37,6 +52,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add session expiration middleware
+app.add_middleware(SessionExpirationMiddleware)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -67,7 +85,7 @@ async def root(request: Request, current_user=Depends(get_current_user)):
             return RedirectResponse(url="/doctors/dashboard")
         elif current_user.role == "admin":
             return RedirectResponse(url="/admins/dashboard")
-    return templates.TemplateResponse("login.html", {"request": request})
+    return RedirectResponse(url="/login", status_code=303)
 
 if __name__ == "__main__":
     import uvicorn
