@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func, or_
+import sqlalchemy.orm
 from typing import List, Optional
+from datetime import datetime, timedelta, date
 
 from app import crud, schemas, models
 from app.database import get_db
@@ -45,6 +48,253 @@ def admin_dashboard(
         "doctor_count": doctor_count,
         "appointment_count": appointment_count,
         "recent_appointments": recent_appointments
+    })
+
+@router.get("/admins/doctors", response_class=HTMLResponse)
+def admin_doctors(
+    request: Request,
+    search: Optional[str] = None,
+    specialization_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_admin_role)
+):
+    admin = crud.get_admin_by_user_id(db, current_user.user_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin profile not found")
+    
+    # Get all specializations for the dropdown filter
+    specializations = crud.get_specializations(db)
+    
+    # Build query for doctors
+    query = db.query(models.Doctor).options(
+        sqlalchemy.orm.joinedload(models.Doctor.user),
+        sqlalchemy.orm.joinedload(models.Doctor.specialization)
+    )
+    
+    # Apply filters if provided
+    if search:
+        search_term = f"%{search}%"
+        query = query.join(models.User).filter(
+            sqlalchemy.or_(
+                models.Doctor.name.ilike(search_term),
+                models.User.email.ilike(search_term)
+            )
+        )
+    
+    if specialization_id:
+        query = query.filter(models.Doctor.specialization_id == specialization_id)
+    
+    # Get results
+    doctors = query.all()
+    
+    return templates.TemplateResponse("admin/doctors.html", {
+        "request": request,
+        "user": current_user,
+        "admin": admin,
+        "doctors": doctors,
+        "specializations": specializations,
+        "search": search,
+        "specialization_id": specialization_id
+    })
+
+@router.get("/admins/doctors/{doctor_id}", response_class=HTMLResponse)
+def admin_doctor_detail(
+    request: Request,
+    doctor_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_admin_role)
+):
+    admin = crud.get_admin_by_user_id(db, current_user.user_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin profile not found")
+    
+    # Get doctor with all relationships
+    doctor = db.query(models.Doctor).options(
+        sqlalchemy.orm.joinedload(models.Doctor.user),
+        sqlalchemy.orm.joinedload(models.Doctor.specialization),
+        sqlalchemy.orm.joinedload(models.Doctor.appointments).joinedload(models.Appointment.patient),
+        sqlalchemy.orm.joinedload(models.Doctor.health_records).joinedload(models.HealthRecord.patient),
+        sqlalchemy.orm.joinedload(models.Doctor.feedbacks).joinedload(models.Feedback.patient)
+    ).filter(models.Doctor.doctor_id == doctor_id).first()
+    
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    
+    # Get all specializations for dropdown in edit form
+    specializations = crud.get_specializations(db)
+    
+    # Get upcoming appointments
+    upcoming_appointments = db.query(models.Appointment).filter(
+        models.Appointment.doctor_id == doctor_id,
+        models.Appointment.appointment_time > datetime.now()
+    ).order_by(models.Appointment.appointment_time).limit(5).all()
+    
+    # Get past appointments
+    past_appointments = db.query(models.Appointment).filter(
+        models.Appointment.doctor_id == doctor_id,
+        models.Appointment.appointment_time <= datetime.now()
+    ).order_by(models.Appointment.appointment_time.desc()).limit(10).all()
+    
+    return templates.TemplateResponse("admin/doctor_detail.html", {
+        "request": request,
+        "user": current_user,
+        "admin": admin,
+        "doctor": doctor,
+        "specializations": specializations,
+        "upcoming_appointments": upcoming_appointments,
+        "past_appointments": past_appointments,
+        "now": datetime.now
+    })
+
+@router.get("/admins/patients", response_class=HTMLResponse)
+def admin_patients(
+    request: Request,
+    search: Optional[str] = None,
+    gender: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_admin_role)
+):
+    admin = crud.get_admin_by_user_id(db, current_user.user_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin profile not found")
+    
+    # Build query for patients
+    query = db.query(models.Patient).options(
+        sqlalchemy.orm.joinedload(models.Patient.user)
+    )
+    
+    # Apply filters if provided
+    if search:
+        search_term = f"%{search}%"
+        query = query.join(models.User).filter(
+            sqlalchemy.or_(
+                models.Patient.name.ilike(search_term),
+                models.User.email.ilike(search_term)
+            )
+        )
+    
+    if gender:
+        query = query.filter(models.Patient.gender == gender)
+    
+    # Get results
+    patients = query.all()
+    
+    return templates.TemplateResponse("admin/patients.html", {
+        "request": request,
+        "user": current_user,
+        "admin": admin,
+        "patients": patients,
+        "search": search,
+        "gender": gender,
+        "now": datetime.now
+    })
+
+@router.get("/admins/patients/{patient_id}", response_class=HTMLResponse)
+def admin_patient_detail(
+    request: Request,
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_admin_role)
+):
+    admin = crud.get_admin_by_user_id(db, current_user.user_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin profile not found")
+    
+    # Get patient with all relationships
+    patient = db.query(models.Patient).options(
+        sqlalchemy.orm.joinedload(models.Patient.user),
+        sqlalchemy.orm.joinedload(models.Patient.appointments).joinedload(models.Appointment.doctor),
+        sqlalchemy.orm.joinedload(models.Patient.health_records).joinedload(models.HealthRecord.doctor),
+        sqlalchemy.orm.joinedload(models.Patient.billings)
+    ).filter(models.Patient.patient_id == patient_id).first()
+    
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    # Get appointments
+    appointments = db.query(models.Appointment).options(
+        sqlalchemy.orm.joinedload(models.Appointment.doctor).joinedload(models.Doctor.specialization)
+    ).filter(models.Appointment.patient_id == patient_id).order_by(models.Appointment.appointment_time.desc()).all()
+    
+    # Get health records
+    health_records = db.query(models.HealthRecord).options(
+        sqlalchemy.orm.joinedload(models.HealthRecord.doctor).joinedload(models.Doctor.specialization)
+    ).filter(models.HealthRecord.patient_id == patient_id).order_by(models.HealthRecord.created_at.desc()).all()
+    
+    # Get billings
+    billings = db.query(models.Billing).options(
+        sqlalchemy.orm.joinedload(models.Billing.appointment).joinedload(models.Appointment.doctor)
+    ).filter(models.Billing.patient_id == patient_id).order_by(models.Billing.created_at.desc()).all()
+    
+    return templates.TemplateResponse("admin/patient_detail.html", {
+        "request": request,
+        "user": current_user,
+        "admin": admin,
+        "patient": patient,
+        "appointments": appointments,
+        "health_records": health_records,
+        "billings": billings,
+        "now": datetime.now
+    })
+
+@router.get("/admins/appointments", response_class=HTMLResponse)
+def admin_appointments(
+    request: Request,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    doctor_id: Optional[int] = None,
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_admin_role)
+):
+    admin = crud.get_admin_by_user_id(db, current_user.user_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin profile not found")
+    
+    # Get all doctors for dropdown filter
+    doctors = crud.get_doctors(db)
+    
+    # Build query for appointments
+    query = db.query(models.Appointment).options(
+        sqlalchemy.orm.joinedload(models.Appointment.patient),
+        sqlalchemy.orm.joinedload(models.Appointment.doctor).joinedload(models.Doctor.specialization)
+    )
+    
+    # Apply filters if provided
+    if date_from:
+        try:
+            from_date = datetime.strptime(date_from, "%Y-%m-%d").date()
+            query = query.filter(func.date(models.Appointment.appointment_time) >= from_date)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            to_date = datetime.strptime(date_to, "%Y-%m-%d").date()
+            query = query.filter(func.date(models.Appointment.appointment_time) <= to_date)
+        except ValueError:
+            pass
+    
+    if doctor_id:
+        query = query.filter(models.Appointment.doctor_id == doctor_id)
+    
+    if status:
+        query = query.filter(models.Appointment.status == status)
+    
+    # Get results sorted by appointment time
+    appointments = query.order_by(models.Appointment.appointment_time).all()
+    
+    return templates.TemplateResponse("admin/appointments.html", {
+        "request": request,
+        "user": current_user,
+        "admin": admin,
+        "appointments": appointments,
+        "doctors": doctors,
+        "date_from": date_from,
+        "date_to": date_to,
+        "doctor_id": doctor_id,
+        "status": status,
+        "now": datetime.now
     })
 
 @router.get("/admins/users", response_class=HTMLResponse)

@@ -6,26 +6,26 @@
 <div class="container mx-auto">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-semibold">Appointments Management</h1>
-        <div class="flex space-x-2">
-            <a href="/admins/dashboard" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
-                <i data-feather="arrow-left" class="h-4 w-4 inline-block mr-1"></i> Back to Dashboard
-            </a>
-        </div>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onclick="showAddModal()">
+            Schedule Appointment
+        </button>
     </div>
     
-    <!-- Filter Controls -->
+    <!-- Search & Filter -->
     <div class="bg-white shadow rounded-lg p-6 mb-6">
-        <form method="get" action="/admins/appointments" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <form method="get" action="/admins/appointments" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-                <label for="date_from" class="block text-gray-700 font-medium mb-2">Date From</label>
-                <input type="date" id="date_from" name="date_from" value="{{ date_from if date_from else '' }}" 
-                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            
-            <div>
-                <label for="date_to" class="block text-gray-700 font-medium mb-2">Date To</label>
-                <input type="date" id="date_to" name="date_to" value="{{ date_to if date_to else '' }}" 
-                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label class="block text-gray-700 font-medium mb-2">Date Range</label>
+                <div class="flex gap-2">
+                    <input type="date" name="date_from" value="{{ date_from if date_from else '' }}" 
+                           placeholder="From"
+                           class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <span class="self-center">to</span>
+                    <input type="date" name="date_to" value="{{ date_to if date_to else '' }}" 
+                           placeholder="To"
+                           class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
             </div>
             
             <div>
@@ -34,7 +34,7 @@
                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Doctors</option>
                     {% for doctor in doctors %}
-                        <option value="{{ doctor.doctor_id }}" {% if doctor_id == doctor.doctor_id %}selected{% endif %}>
+                        <option value="{{ doctor.doctor_id }}" {% if doctor_id and doctor_id == doctor.doctor_id %}selected{% endif %}>
                             Dr. {{ doctor.name }}
                         </option>
                     {% endfor %}
@@ -45,9 +45,8 @@
                 <label for="status" class="block text-gray-700 font-medium mb-2">Status</label>
                 <select id="status" name="status" 
                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Statuses</option>
+                    <option value="">All Status</option>
                     <option value="scheduled" {% if status == 'scheduled' %}selected{% endif %}>Scheduled</option>
-                    <option value="confirmed" {% if status == 'confirmed' %}selected{% endif %}>Confirmed</option>
                     <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option>
                     <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelled</option>
                     <option value="no_show" {% if status == 'no_show' %}selected{% endif %}>No Show</option>
@@ -55,8 +54,8 @@
             </div>
             
             <div class="flex items-end">
-                <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                    Apply Filters
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    Filter
                 </button>
             </div>
         </form>
@@ -78,12 +77,11 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -91,43 +89,49 @@
                         {% for appointment in appointments %}
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ appointment.appointment_id }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ appointment.appointment_time.strftime('%b %d, %Y') }}</div>
+                                    <div class="text-sm text-gray-900">{{ appointment.appointment_time.strftime('%d %b %Y') }}</div>
                                     <div class="text-sm text-gray-500">{{ appointment.appointment_time.strftime('%I:%M %p') }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="font-medium text-gray-900">{{ appointment.patient.name }}</div>
-                                    <div class="text-xs text-gray-500">
-                                        {% if appointment.patient.dob %}
-                                            {{ (now().date() - appointment.patient.dob).days // 365 }} years
-                                        {% endif %}
-                                    </div>
+                                    <div class="text-sm text-gray-500">{{ appointment.patient.contact if appointment.patient.contact else 'No contact' }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="font-medium text-gray-900">Dr. {{ appointment.doctor.name }}</div>
-                                    <div class="text-xs text-gray-500">{{ appointment.doctor.specialization.name if appointment.doctor.specialization else 'General' }}</div>
+                                    <div class="text-sm text-gray-500">
+                                        {{ appointment.doctor.specialization.name if appointment.doctor.specialization else 'General' }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900">
+                                        {{ appointment.reason }}
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        {% if appointment.status == 'scheduled' %} bg-yellow-100 text-yellow-800 
-                                        {% elif appointment.status == 'confirmed' %} bg-green-100 text-green-800 
-                                        {% elif appointment.status == 'completed' %} bg-blue-100 text-blue-800 
+                                        {% if appointment.status == 'scheduled' %} bg-blue-100 text-blue-800 
+                                        {% elif appointment.status == 'completed' %} bg-green-100 text-green-800 
                                         {% elif appointment.status == 'cancelled' %} bg-red-100 text-red-800 
-                                        {% elif appointment.status == 'no_show' %} bg-gray-100 text-gray-800 
+                                        {% elif appointment.status == 'no_show' %} bg-yellow-100 text-yellow-800 
                                         {% endif %}">
-                                        {{ appointment.status | title }}
+                                        {{ appointment.status|title }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="text-sm text-gray-900 truncate max-w-xs">{{ appointment.reason if appointment.reason else 'Not specified' }}</div>
-                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <button class="text-blue-600 hover:text-blue-800" 
-                                            onclick="showAppointmentDetails('{{ appointment.appointment_id }}')">
-                                        View Details
+                                    <button class="text-blue-600 hover:text-blue-800 mr-3" 
+                                            onclick="viewAppointment('{{ appointment.appointment_id }}')">
+                                        View
                                     </button>
+                                    <button class="text-blue-600 hover:text-blue-800 mr-3" 
+                                            onclick="editAppointment('{{ appointment.appointment_id }}', '{{ appointment.patient.patient_id }}', '{{ appointment.doctor.doctor_id }}', '{{ appointment.appointment_time.strftime('%Y-%m-%dT%H:%M') }}', '{{ appointment.reason }}', '{{ appointment.notes }}', '{{ appointment.status }}')">
+                                        Edit
+                                    </button>
+                                    {% if appointment.status == 'scheduled' and appointment.appointment_time > now() %}
+                                    <button class="text-red-600 hover:text-red-800" 
+                                            onclick="cancelAppointment('{{ appointment.appointment_id }}')">
+                                        Cancel
+                                    </button>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% endfor %}
@@ -141,50 +145,151 @@
         {% endif %}
     </div>
     
-    <!-- Appointment Details Modal -->
-    <div id="appointmentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-        <div class="relative top-20 mx-auto p-5 border w-3/4 max-w-2xl shadow-lg rounded-md bg-white">
+    <!-- Schedule Appointment Modal -->
+    <div id="addModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-medium">Schedule Appointment</h3>
+                <button onclick="hideAddModal()" class="text-gray-400 hover:text-gray-500">
+                    <span class="text-2xl">&times;</span>
+                </button>
+            </div>
+            
+            <form method="post" action="/admins/appointments/create" class="mt-4">
+                <div class="mb-4">
+                    <label for="patient_id" class="block text-gray-700 font-medium mb-2">Patient</label>
+                    <select id="patient_id" name="patient_id" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Patient</option>
+                        {% for patient in patients %}
+                            <option value="{{ patient.patient_id }}">{{ patient.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="doctor_id" class="block text-gray-700 font-medium mb-2">Doctor</label>
+                    <select id="doctor_id" name="doctor_id" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           onchange="checkDoctorAvailability()">
+                        <option value="">Select Doctor</option>
+                        {% for doctor in doctors %}
+                            <option value="{{ doctor.doctor_id }}">Dr. {{ doctor.name }} ({{ doctor.specialization.name if doctor.specialization else 'General' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="appointment_time" class="block text-gray-700 font-medium mb-2">Date & Time</label>
+                    <input type="datetime-local" id="appointment_time" name="appointment_time" required
+                           min="{{ now().strftime('%Y-%m-%dT%H:%M') }}"
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           onchange="checkDoctorAvailability()">
+                    <div id="availability_message" class="mt-2 text-sm"></div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="reason" class="block text-gray-700 font-medium mb-2">Reason for Visit</label>
+                    <textarea id="reason" name="reason" rows="2" required
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="notes" class="block text-gray-700 font-medium mb-2">Notes</label>
+                    <textarea id="notes" name="notes" rows="3"
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="button" onclick="hideAddModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                        Schedule
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- View Appointment Modal -->
+    <div id="viewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center pb-3 border-b">
                 <h3 class="text-lg font-medium">Appointment Details</h3>
-                <button onclick="hideAppointmentModal()" class="text-gray-400 hover:text-gray-500">
+                <button onclick="hideViewModal()" class="text-gray-400 hover:text-gray-500">
                     <span class="text-2xl">&times;</span>
                 </button>
             </div>
             
             <div id="appointmentDetails" class="mt-4">
-                <div class="text-center text-gray-500">
-                    Loading appointment details...
-                </div>
+                <!-- Appointment details will be filled dynamically -->
             </div>
             
-            <div class="mt-6 flex justify-end space-x-4">
-                <button onclick="hideAppointmentModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">
+            <div class="flex justify-end mt-6">
+                <button type="button" onclick="hideViewModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">
                     Close
-                </button>
-                <button id="updateStatusBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg">
-                    Update Status
                 </button>
             </div>
         </div>
     </div>
     
-    <!-- Update Status Modal -->
-    <div id="statusModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <!-- Edit Appointment Modal -->
+    <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center pb-3 border-b">
-                <h3 class="text-lg font-medium">Update Appointment Status</h3>
-                <button onclick="hideStatusModal()" class="text-gray-400 hover:text-gray-500">
+                <h3 class="text-lg font-medium">Edit Appointment</h3>
+                <button onclick="hideEditModal()" class="text-gray-400 hover:text-gray-500">
                     <span class="text-2xl">&times;</span>
                 </button>
             </div>
             
-            <form id="updateStatusForm" method="post" action="" class="mt-4">
+            <form id="editForm" method="post" action="" class="mt-4">
                 <div class="mb-4">
-                    <label for="status_update" class="block text-gray-700 font-medium mb-2">New Status</label>
-                    <select id="status_update" name="status" required
+                    <label for="edit_patient_id" class="block text-gray-700 font-medium mb-2">Patient</label>
+                    <select id="edit_patient_id" name="patient_id" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Patient</option>
+                        {% for patient in patients %}
+                            <option value="{{ patient.patient_id }}">{{ patient.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="edit_doctor_id" class="block text-gray-700 font-medium mb-2">Doctor</label>
+                    <select id="edit_doctor_id" name="doctor_id" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Doctor</option>
+                        {% for doctor in doctors %}
+                            <option value="{{ doctor.doctor_id }}">Dr. {{ doctor.name }} ({{ doctor.specialization.name if doctor.specialization else 'General' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="edit_appointment_time" class="block text-gray-700 font-medium mb-2">Date & Time</label>
+                    <input type="datetime-local" id="edit_appointment_time" name="appointment_time" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="edit_reason" class="block text-gray-700 font-medium mb-2">Reason for Visit</label>
+                    <textarea id="edit_reason" name="reason" rows="2" required
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="edit_notes" class="block text-gray-700 font-medium mb-2">Notes</label>
+                    <textarea id="edit_notes" name="notes" rows="3"
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="edit_status" class="block text-gray-700 font-medium mb-2">Status</label>
+                    <select id="edit_status" name="status" required
                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="scheduled">Scheduled</option>
-                        <option value="confirmed">Confirmed</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
                         <option value="no_show">No Show</option>
@@ -192,11 +297,11 @@
                 </div>
                 
                 <div class="flex justify-end">
-                    <button type="button" onclick="hideStatusModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">
+                    <button type="button" onclick="hideEditModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">
                         Cancel
                     </button>
                     <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">
-                        Update Status
+                        Update
                     </button>
                 </div>
             </form>
@@ -206,102 +311,87 @@
 
 {% block scripts %}
 <script>
-    let currentAppointmentId = null;
+    // Add Appointment Modal
+    function showAddModal() {
+        document.getElementById('addModal').classList.remove('hidden');
+    }
     
-    function showAppointmentDetails(appointmentId) {
-        currentAppointmentId = appointmentId;
-        document.getElementById('appointmentDetails').innerHTML = '<div class="text-center text-gray-500">Loading appointment details...</div>';
-        document.getElementById('appointmentModal').classList.remove('hidden');
+    function hideAddModal() {
+        document.getElementById('addModal').classList.add('hidden');
+    }
+    
+    // View Appointment Modal
+    function viewAppointment(appointmentId) {
+        // In a real application, you would fetch the appointment details from the server
+        // For now, we'll simulate this with a placeholder
+        document.getElementById('appointmentDetails').innerHTML = `<p>Loading appointment details for ID: ${appointmentId}...</p>`;
         
-        // Fetch appointment details
-        fetch(`/api/appointments/${appointmentId}`)
-            .then(response => response.json())
-            .then(appointment => {
-                const appointmentTime = new Date(appointment.appointment_time);
-                const formattedDate = appointmentTime.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                const formattedTime = appointmentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
-                
-                const statusClass = 
-                    appointment.status === 'scheduled' ? 'bg-yellow-100 text-yellow-800' :
-                    appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                    appointment.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                    appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800';
-                
-                const html = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-gray-600 mb-1">Appointment ID</p>
-                            <p class="font-medium">${appointment.appointment_id}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600 mb-1">Status</p>
-                            <p class="font-medium">
-                                <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">
-                                    ${appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                                </span>
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600 mb-1">Date</p>
-                            <p class="font-medium">${formattedDate}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600 mb-1">Time</p>
-                            <p class="font-medium">${formattedTime}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600 mb-1">Patient</p>
-                            <p class="font-medium">${appointment.patient.name}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600 mb-1">Doctor</p>
-                            <p class="font-medium">Dr. ${appointment.doctor.name}</p>
-                        </div>
-                        <div class="col-span-2">
-                            <p class="text-gray-600 mb-1">Reason for Visit</p>
-                            <p class="font-medium">${appointment.reason || 'Not specified'}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600 mb-1">Created</p>
-                            <p class="font-medium">${new Date(appointment.created_at).toLocaleString()}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-600 mb-1">Last Updated</p>
-                            <p class="font-medium">${new Date(appointment.updated_at).toLocaleString()}</p>
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('appointmentDetails').innerHTML = html;
-                
-                // Set the current status in the status modal
-                document.getElementById('status_update').value = appointment.status;
-                
-                // Setup the update status button
-                document.getElementById('updateStatusBtn').onclick = function() {
-                    showStatusModal(appointment.appointment_id);
-                };
-            })
-            .catch(error => {
-                console.error('Error fetching appointment details:', error);
-                document.getElementById('appointmentDetails').innerHTML = '<div class="text-center text-red-500">Error loading appointment details. Please try again.</div>';
-            });
+        document.getElementById('viewModal').classList.remove('hidden');
     }
     
-    function hideAppointmentModal() {
-        document.getElementById('appointmentModal').classList.add('hidden');
+    function hideViewModal() {
+        document.getElementById('viewModal').classList.add('hidden');
     }
     
-    function showStatusModal(appointmentId) {
-        document.getElementById('updateStatusForm').action = `/api/appointments/${appointmentId}`;
-        document.getElementById('statusModal').classList.remove('hidden');
-        document.getElementById('appointmentModal').classList.add('hidden');
+    // Edit Appointment Modal
+    function editAppointment(appointmentId, patientId, doctorId, appointmentTime, reason, notes, status) {
+        document.getElementById('edit_patient_id').value = patientId;
+        document.getElementById('edit_doctor_id').value = doctorId;
+        document.getElementById('edit_appointment_time').value = appointmentTime;
+        document.getElementById('edit_reason').value = reason;
+        document.getElementById('edit_notes').value = notes;
+        document.getElementById('edit_status').value = status;
+        
+        document.getElementById('editForm').action = `/api/appointments/${appointmentId}`;
+        
+        document.getElementById('editModal').classList.remove('hidden');
     }
     
-    function hideStatusModal() {
-        document.getElementById('statusModal').classList.add('hidden');
-        document.getElementById('appointmentModal').classList.remove('hidden');
+    function hideEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+    
+    // Cancel Appointment
+    function cancelAppointment(appointmentId) {
+        if (confirm("Are you sure you want to cancel this appointment?")) {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = `/api/appointments/${appointmentId}/cancel`;
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+    
+    // Check Doctor Availability
+    function checkDoctorAvailability() {
+        const doctorId = document.getElementById('doctor_id').value;
+        const appointmentTime = document.getElementById('appointment_time').value;
+        const messageElement = document.getElementById('availability_message');
+        
+        if (!doctorId || !appointmentTime) {
+            messageElement.textContent = '';
+            return;
+        }
+        
+        // In a real application, you would make an AJAX request to check availability
+        // For now, we'll just show a placeholder message
+        messageElement.textContent = 'Checking availability...';
+        messageElement.className = 'mt-2 text-sm text-blue-600';
+        
+        // Simulate a response after a short delay
+        setTimeout(() => {
+            // This is a placeholder - in a real app, this would be based on the server response
+            const isAvailable = Math.random() > 0.3; // 70% chance of availability for demo
+            
+            if (isAvailable) {
+                messageElement.textContent = 'Doctor is available at this time.';
+                messageElement.className = 'mt-2 text-sm text-green-600';
+            } else {
+                messageElement.textContent = 'Doctor is not available at this time. Please choose another time.';
+                messageElement.className = 'mt-2 text-sm text-red-600';
+            }
+        }, 1000);
     }
 </script>
 {% endblock %}
