@@ -80,7 +80,7 @@ async def logout(response: Response):
     return RedirectResponse(url="/login", status_code=303)
 
 @router.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request, error: Optional[str] = None):
+async def register_page(request: Request, error: Optional[str] = None, db: Session = Depends(get_db)):
     specializations = crud.get_specializations(db)
     return templates.TemplateResponse("register.html", {"request": request, "error": error, "specializations": specializations})
 
