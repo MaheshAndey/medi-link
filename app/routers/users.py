@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Form
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import List
@@ -58,3 +59,23 @@ def delete_user(
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
     return success
+
+@router.post("/{user_id}/status")
+def update_user_status(
+    user_id: int,
+    is_active: bool = Form(...),
+    db: Session = Depends(get_db),
+    current_user: schemas.UserResponse = Depends(check_admin_role)
+):
+    db_user = crud.get_user(db, user_id=user_id)
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_update = schemas.UserUpdate(is_active=is_active)
+    updated_user = crud.update_user(db, user_id=user_id, user_update=user_update)
+    
+    # Get updated list of users
+    users = crud.get_users(db, skip=0, limit=100)
+    
+    # Return the template with updated user list
+    return RedirectResponse(url = "/admins/users", status_code=303)

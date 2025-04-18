@@ -181,7 +181,7 @@
         document.getElementById('edit_description').value = description;
         
         const form = document.getElementById('editForm');
-        form.action = `/api/specializations/${id}`;
+        form.action = `/admins/specializations/${id}/update`;
         
         document.getElementById('editModal').classList.remove('hidden');
     }
@@ -192,7 +192,7 @@
     
     function deleteSpecialization(id) {
         const form = document.getElementById('deleteForm');
-        form.action = `/api/specializations/${id}`;
+        form.action = `/admins/specializations/${id}/delete`;
         
         document.getElementById('deleteModal').classList.remove('hidden');
     }

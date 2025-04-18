@@ -546,6 +546,76 @@ def delete_admin_api(
         raise HTTPException(status_code=404, detail="Admin not found")
     return success
 
+@router.post("/api/doctors/{doctor_id}")
+async def update_doctor_api(
+    doctor_id: int,
+    name: str = Form(...),
+    specialization_id: Optional[int] = Form(None),
+    qualification: Optional[str] = Form(None),
+    experience: Optional[int] = Form(None),
+    consultation_fee: Optional[float] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_admin_role)
+):
+    # Get doctor
+    doctor = crud.get_doctor(db, doctor_id)
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    
+    # Update doctor
+    doctor_update = schemas.DoctorUpdate(
+        name=name,
+        specialization_id=specialization_id,
+        qualification=qualification,
+        experience=experience,
+        consultation_fee=consultation_fee
+    )
+    
+    updated_doctor = crud.update_doctor(db, doctor_id, doctor_update)
+    if not updated_doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    
+    return RedirectResponse(url=f"/admins/doctors", status_code=303)
+
+@router.post("/api/patients/{patient_id}")
+async def update_patient_api(
+    patient_id: int,
+    name: str = Form(...),
+    dob: Optional[str] = Form(None),
+    gender: Optional[str] = Form(None),
+    contact: Optional[str] = Form(None),
+    address: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_admin_role)
+):
+    # Get patient
+    patient = crud.get_patient(db, patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    # Convert dob string to date if provided
+    dob_date = None
+    if dob:
+        try:
+            dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format")
+    
+    # Update patient
+    patient_update = schemas.PatientUpdate(
+        name=name,
+        dob=dob_date,
+        gender=gender,
+        contact=contact,
+        address=address
+    )
+    
+    updated_patient = crud.update_patient(db, patient_id, patient_update)
+    if not updated_patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    
+    return RedirectResponse(url=f"/admins/patients", status_code=303)
+
 @router.post("/api/specializations", response_model=schemas.SpecializationResponse)
 def create_specialization_api(
     specialization: schemas.SpecializationCreate,
@@ -572,3 +642,88 @@ def read_specialization_api(
     if db_specialization is None:
         raise HTTPException(status_code=404, detail="Specialization not found")
     return db_specialization
+
+@router.post("/admins/patients/create")
+async def create_patient_by_admin(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    name: str = Form(...),
+    dob: Optional[str] = Form(None),
+    gender: Optional[str] = Form(None),
+    contact: Optional[str] = Form(None),
+    address: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_admin_role)
+):
+    # Check if user already exists
+    user = crud.get_user_by_email(db, email)
+    if user:
+        return RedirectResponse(
+            url="/admins/patients?error=Email+already+registered",
+            status_code=303
+        )
+
+    # Create registration data
+    from datetime import datetime
+    dob_date = None
+    if dob:
+        try:
+            dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
+        except ValueError:
+            return RedirectResponse(
+                url="/admins/patients?error=Invalid+date+format",
+                status_code=303
+            )
+
+    registration_data = schemas.PatientRegistration(
+        email=email,
+        password=password,
+        name=name,
+        dob=dob_date,
+        gender=gender,
+        contact=contact,
+        address=address
+    )
+
+    # Register patient
+    patient = crud.register_patient(db, registration_data)
+
+    # Redirect to patients list
+    return RedirectResponse(url="/admins/patients", status_code=303)
+
+@router.post("/admins/doctors/create")
+async def create_doctor_by_admin(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    name: str = Form(...),
+    specialization_id: Optional[int] = Form(None),
+    experience: Optional[int] = Form(None),
+    contact: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_admin_role)
+):
+    # Check if user already exists
+    user = crud.get_user_by_email(db, email)
+    if user:
+        return RedirectResponse(
+            url="/admins/doctors?error=Email+already+registered",
+            status_code=303
+        )
+
+    # Create registration data
+    registration_data = schemas.DoctorRegistration(
+        email=email,
+        password=password,
+        name=name,
+        specialization_id=specialization_id,
+        experience=experience,
+        contact=contact
+    )
+
+    # Register doctor
+    doctor = crud.register_doctor(db, registration_data)
+
+    # Redirect to doctors list
+    return RedirectResponse(url="/admins/doctors", status_code=303)

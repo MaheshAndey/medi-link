@@ -41,6 +41,18 @@ def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate):
 def delete_user(db: Session, user_id: int):
     db_user = db.query(models.User).filter(models.User.user_id == user_id).first()
     if db_user:
+        if db_user.role == "patient":
+            patient = db.query(models.Patient).filter(models.Patient.user_id == user_id).first()
+            if patient:
+                db.delete(patient)
+        elif db_user.role == "doctor":
+            doctor = db.query(models.Doctor).filter(models.Doctor.user_id == user_id).first()
+            if doctor:
+                db.delete(doctor)
+        elif db_user.role == "admin":
+            admin = db.query(models.Admin).filter(models.Admin.user_id == user_id).first()
+            if admin:
+                db.delete(admin)
         db.delete(db_user)
         db.commit()
         return True
