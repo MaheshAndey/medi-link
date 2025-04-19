@@ -213,6 +213,12 @@ def delete_appointment(db: Session, appointment_id: int):
 def get_schedule(db: Session, schedule_id: int):
     return db.query(models.DoctorSchedule).filter(models.DoctorSchedule.schedule_id == schedule_id).first()
 
+def get_doctor_schedule_for_today(db: Session, doctor_id: int, day: str):
+    return db.query(models.DoctorSchedule).filter(
+        models.DoctorSchedule.doctor_id == doctor_id,
+        models.DoctorSchedule.day == day
+    ).all()
+
 def get_doctor_schedules(db: Session, doctor_id: int):
     return db.query(models.DoctorSchedule).filter(models.DoctorSchedule.doctor_id == doctor_id).all()
 

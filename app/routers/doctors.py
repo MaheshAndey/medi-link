@@ -11,6 +11,8 @@ from app import crud, schemas, models
 from app.database import get_db
 from app.dependencies import get_current_active_user, check_doctor_role, check_admin_role
 
+import calendar
+
 router = APIRouter(
     tags=["doctors"]
 )
@@ -27,38 +29,44 @@ def doctor_dashboard(
     doctor = crud.get_doctor_by_user_id(db, current_user.user_id)
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor profile not found")
-    
-    # Get today's appointments
+
     today = datetime.now().date()
-    tomorrow = today + timedelta(days=1)
     today_start = datetime.combine(today, datetime.min.time())
     today_end = datetime.combine(today, datetime.max.time())
-    
+
+    # Appointments
     appointments = db.query(models.Appointment).filter(
         models.Appointment.doctor_id == doctor.doctor_id,
         models.Appointment.appointment_time >= today_start,
         models.Appointment.appointment_time <= today_end
     ).all()
-    
-    # Get pending appointments
+
+    # Pending Appointments
     pending_appointments = db.query(models.Appointment).filter(
         models.Appointment.doctor_id == doctor.doctor_id,
         models.Appointment.status == "scheduled"
     ).all()
-    
-    # Get recent health records
+
+    # Recent Health Records
     recent_records = db.query(models.HealthRecord).filter(
         models.HealthRecord.doctor_id == doctor.doctor_id
     ).order_by(models.HealthRecord.created_at.desc()).limit(5).all()
-    
+
+    # ✅ Use the correct CRUD function to get the doctor's schedule for today
+    today_day_name = calendar.day_name[today.weekday()].lower()  # Get today's day (e.g., "monday")
+    today_schedule = crud.get_doctor_schedule_for_today(db, doctor_id=doctor.doctor_id, day=today_day_name)
+
     return templates.TemplateResponse("doctor/dashboard.html", {
         "request": request,
         "user": current_user,
         "doctor": doctor,
         "today_appointments": appointments,
         "pending_appointments": pending_appointments,
-        "recent_records": recent_records
+        "recent_records": recent_records,
+        "today_schedule": today_schedule  # Pass the schedule data to the template
     })
+
+
 
 @router.get("/doctors/appointments", response_class=HTMLResponse)
 def doctor_appointments(

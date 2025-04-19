@@ -3,104 +3,75 @@
 {% block title %}Doctor Dashboard - MediLink{% endblock %}
 
 {% block content %}
-<div class="container mx-auto">
+<div class="container mx-auto flex flex-col">
+
+    <!-- Doctor Dashboard Header -->
     <h1 class="text-2xl font-semibold mb-6">Doctor Dashboard</h1>
-    
+
+    <!-- Main Content Area (Grid Layout for Boxes) -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
         <!-- Today's Appointments -->
-        <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col">
             <div class="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
                 <h2 class="font-semibold text-lg">Today's Appointments</h2>
                 <a href="/doctors/appointments" class="text-sm bg-white text-blue-600 px-3 py-1 rounded hover:bg-blue-100">View All</a>
             </div>
-            <div class="p-6">
+            <div class="p-6 flex items-center justify-center">
                 {% if today_appointments %}
-                    {% for appointment in today_appointments %}
-                        <div class="mb-4 pb-4 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
-                            <div class="flex justify-between">
-                                <span class="font-medium">{{ appointment.patient.name }}</span>
-                                <span class="text-sm">{{ appointment.appointment_time.strftime('%I:%M %p') }}</span>
-                            </div>
-                            <div class="flex justify-between mt-1">
-                                <span class="text-sm text-gray-600">{{ appointment.reason if appointment.reason else 'No reason provided' }}</span>
-                                <span class="text-sm px-2 py-1 rounded {% if appointment.status == 'scheduled' %}bg-yellow-100 text-yellow-800{% elif appointment.status == 'confirmed' %}bg-green-100 text-green-800{% endif %}">
-                                    {{ appointment.status | title }}
-                                </span>
-                            </div>
-                        </div>
-                    {% endfor %}
+                    <div class="text-center">
+                        <p class="text-5xl font-bold text-blue-600">{{ today_appointments | length }}</p>
+                        <p class="text-gray-600 mt-2">Appointments Today</p>
+                    </div>
                 {% else %}
-                    <p class="text-gray-500 text-center">No appointments scheduled for today</p>
+                    <p class="text-gray-500 text-center text-lg">No appointments today</p>
                 {% endif %}
             </div>
         </div>
-        
+
         <!-- Pending Appointments -->
-        <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col">
             <div class="px-6 py-4 bg-yellow-600 text-white flex justify-between items-center">
                 <h2 class="font-semibold text-lg">Pending Appointments</h2>
                 <a href="/doctors/appointments" class="text-sm bg-white text-yellow-600 px-3 py-1 rounded hover:bg-yellow-100">View All</a>
             </div>
-            <div class="p-6">
+            <div class="p-6 flex items-center justify-center">
                 {% if pending_appointments %}
-                    {% for appointment in pending_appointments[:5] %}
-                        <div class="mb-4 pb-4 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
-                            <div class="flex justify-between">
-                                <span class="font-medium">{{ appointment.patient.name }}</span>
-                                <span class="text-sm">{{ appointment.appointment_time.strftime('%b %d, %I:%M %p') }}</span>
-                            </div>
-                            <div class="mt-2 flex space-x-2">
-                                <form method="post" action="/doctors/appointments/{{ appointment.appointment_id }}/update" class="inline-block">
-                                    <input type="hidden" name="status" value="confirmed">
-                                    <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded text-xs">Confirm</button>
-                                </form>
-                                <form method="post" action="/doctors/appointments/{{ appointment.appointment_id }}/update" class="inline-block">
-                                    <input type="hidden" name="status" value="cancelled">
-                                    <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded text-xs">Cancel</button>
-                                </form>
-                            </div>
-                        </div>
-                    {% endfor %}
+                    <div class="text-center">
+                        <p class="text-5xl font-bold text-yellow-600">{{ pending_appointments | length }}</p>
+                        <p class="text-gray-600 mt-2">Pending Appointments</p>
+                    </div>
                 {% else %}
-                    <p class="text-gray-500 text-center">No pending appointments</p>
+                    <p class="text-gray-500 text-center text-lg">No pending appointments</p>
                 {% endif %}
             </div>
         </div>
-        
-        <!-- Recent Health Records -->
-        <div class="bg-white shadow rounded-lg overflow-hidden">
+
+        <!-- Today's Schedule -->
+        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col">
             <div class="px-6 py-4 bg-green-600 text-white flex justify-between items-center">
-                <h2 class="font-semibold text-lg">Recent Records</h2>
-                <a href="/doctors/patients" class="text-sm bg-white text-green-600 px-3 py-1 rounded hover:bg-green-100">View All</a>
+                <h2 class="font-semibold text-lg">Today's Schedule</h2>
+                <a href="/doctors/schedule" class="text-sm bg-white text-green-600 px-3 py-1 rounded hover:bg-green-100">View Full Schedule</a>
             </div>
             <div class="p-6">
-                {% if recent_records %}
-                    {% for record in recent_records %}
+                {% if today_schedule %}
+                    {% for slot in today_schedule %}
                         <div class="mb-4 pb-4 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
                             <div class="flex justify-between">
-                                <span class="font-medium">{{ record.patient.name }}</span>
-                                <span class="text-gray-500 text-sm">{{ record.created_at.strftime('%b %d, %Y') }}</span>
+                                <span class="text-gray-500 text-sm">{{ slot.start_time.strftime('%I:%M %p') }} - {{ slot.end_time.strftime('%I:%M %p') }}</span>
                             </div>
-                            <div class="text-gray-600 mt-1">
-                                {% if record.diagnosis %}
-                                    <p class="text-sm">{{ record.diagnosis }}</p>
-                                {% else %}
-                                    <p class="text-sm text-gray-500">No diagnosis recorded</p>
-                                {% endif %}
-                            </div>
-                            <div class="mt-2">
-                                <a href="/doctors/health-records/{{ record.record_id }}" class="text-blue-600 hover:text-blue-800 text-sm">View Details</a>
-                            </div>
+                            <p class="text-sm text-gray-600 mt-1">Available for appointments</p>
                         </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-gray-500 text-center">No recent health records</p>
+                    <p class="text-gray-500 text-center">No schedule available for today</p>
                 {% endif %}
             </div>
         </div>
+
     </div>
-    
-    <!-- Doctor Information -->
+
+    <!-- Scrollable Doctor Information Section -->
     <div class="bg-white shadow rounded-lg p-6 mb-8">
         <h2 class="text-xl font-semibold mb-4">Professional Information</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -126,9 +97,9 @@
             </div>
         </div>
     </div>
-    
-    <!-- Quick Links -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Scrollable Quick Links Section -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <a href="/doctors/appointments" class="bg-blue-100 hover:bg-blue-200 p-6 rounded-lg flex items-center justify-between">
             <div>
                 <h3 class="font-semibold text-blue-800">Manage Appointments</h3>
@@ -136,7 +107,7 @@
             </div>
             <span class="text-blue-600" data-feather="calendar"></span>
         </a>
-        
+
         <a href="/doctors/patients" class="bg-green-100 hover:bg-green-200 p-6 rounded-lg flex items-center justify-between">
             <div>
                 <h3 class="font-semibold text-green-800">Patient Records</h3>
@@ -144,7 +115,7 @@
             </div>
             <span class="text-green-600" data-feather="users"></span>
         </a>
-        
+
         <a href="/doctors/schedule" class="bg-purple-100 hover:bg-purple-200 p-6 rounded-lg flex items-center justify-between">
             <div>
                 <h3 class="font-semibold text-purple-800">My Schedule</h3>
@@ -153,5 +124,6 @@
             <span class="text-purple-600" data-feather="clock"></span>
         </a>
     </div>
+
 </div>
 {% endblock %}
