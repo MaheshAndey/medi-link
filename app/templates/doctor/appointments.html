@@ -11,61 +11,10 @@
                 <input type="date" name="date" value="{{ selected_date }}" min="{{ today }}"
                     class="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                    View Schedule
+                    View Appointments
                 </button>
             </form>
         </div>
-    </div>
-
-    <!-- Schedule for the day -->
-    <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
-        <div class="px-6 py-4 bg-gray-100 border-b">
-            <h2 class="font-semibold">My Schedule for {{ day_of_week | title }}</h2>
-        </div>
-
-        {% if schedules %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start
-                            Time</th>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End
-                            Time</th>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for schedule in schedules %}
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ schedule.start_time.strftime('%I:%M %p') }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ schedule.end_time.strftime('%I:%M %p') }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span
-                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        {% if schedule.is_available %} bg-green-100 text-green-800 {% else %} bg-red-100 text-red-800 {% endif %}">
-                                {{ 'Available' if schedule.is_available else 'Unavailable' }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="p-6 text-center text-gray-500">
-            No schedule set for this day. <a href="/doctors/schedule" class="text-blue-600 hover:text-blue-800">Set your
-                schedule</a>.
-        </div>
-        {% endif %}
     </div>
 
     <!-- Appointments for selected date -->
@@ -175,6 +124,84 @@
         {% endif %}
     </div>
 
+    <!-- Pending Appointments -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold">Pending Appointments</h1>
+        <div class="flex items-center space-x-2">
+            <form method="get" action="/doctors/appointments" class="flex items-center space-x-2">
+                <input type="date" name="pending_date_filter" value="{{ pending_date_filter }}" min="{{ today }}"
+                    class="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    Filter
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
+        <div class="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
+            <h2 class="font-semibold">Pending Appointments</h2>
+        </div>
+
+        {% if pending_appointments %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for appointment in pending_appointments %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ appointment.appointment_time.strftime('%b %d, %I:%M %p') }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium text-gray-900">{{ appointment.patient.name }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">{{ appointment.reason if appointment.reason else 'Not specified' }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex space-x-2">
+                                <form method="post" action="/doctors/appointments/{{ appointment.appointment_id }}/update" class="inline-block">
+                                    <input type="hidden" name="status" value="confirmed">
+                                    <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded text-xs">Confirm</button>
+                                </form>
+                                <form method="post" action="/doctors/appointments/{{ appointment.appointment_id }}/update" class="inline-block">
+                                    <input type="hidden" name="status" value="cancelled">
+                                    <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded text-xs">Cancel</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-6 text-center text-gray-500">
+            No pending appointments.
+        </div>
+        {% endif %}
+    </div>
+
     
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Get pending date filter from URL
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pendingDateFilter = urlParams.get('pending_date_filter');
+        if (pendingDateFilter) {
+            document.querySelector('input[name="pending_date_filter"]').value = pendingDateFilter;
+        }
+    };
+</script>
 {% endblock %}

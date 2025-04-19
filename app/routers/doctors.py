@@ -72,6 +72,7 @@ def doctor_dashboard(
 def doctor_appointments(
     request: Request,
     date: Optional[str] = None,
+    pending_date_filter: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(check_doctor_role)
 ):
@@ -96,6 +97,21 @@ def doctor_appointments(
         models.Appointment.appointment_time >= target_start,
         models.Appointment.appointment_time <= target_end
     ).all()
+
+    pending_appointments = db.query(models.Appointment).filter(
+        models.Appointment.doctor_id == doctor.doctor_id,
+        models.Appointment.status == "scheduled",
+    )
+
+    if pending_date_filter:
+        pending_date = datetime.strptime(pending_date_filter, "%Y-%m-%d").date()
+        pending_start_date = datetime.combine(pending_date, datetime.min.time())
+        pending_end_date = datetime.combine(pending_date, datetime.max.time())
+        pending_appointments = pending_appointments.filter(
+            models.Appointment.appointment_time >= pending_start_date,
+            models.Appointment.appointment_time <= pending_end_date
+        )
+    pending_appointments = pending_appointments.all()
     
     # Get schedule for this day
     day_of_week = target_date.strftime("%A").lower()
@@ -109,6 +125,7 @@ def doctor_appointments(
         "user": current_user,
         "doctor": doctor,
         "appointments": appointments,
+        "pending_appointments": pending_appointments,
         "schedules": schedules,
         "selected_date": target_date.strftime("%Y-%m-%d"),
         "day_of_week": day_of_week,
