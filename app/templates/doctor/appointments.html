@@ -17,6 +17,57 @@
         </div>
     </div>
 
+    <!-- Schedule for the day -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
+        <div class="px-6 py-4 bg-gray-100 border-b">
+            <h2 class="font-semibold">My Schedule for {{ day_of_week | title }}</h2>
+        </div>
+
+        {% if schedules %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start
+                            Time</th>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End
+                            Time</th>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for schedule in schedules %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ schedule.start_time.strftime('%I:%M %p') }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ schedule.end_time.strftime('%I:%M %p') }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span
+                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if schedule.is_available %} bg-green-100 text-green-800 {% else %} bg-red-100 text-red-800 {% endif %}">
+                                {{ 'Available' if schedule.is_available else 'Unavailable' }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-6 text-center text-gray-500">
+            No schedule set for this day. <a href="/doctors/schedule" class="text-blue-600 hover:text-blue-800">Set your
+                schedule</a>.
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Appointments for selected date -->
     <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
         <div class="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
@@ -104,8 +155,6 @@
                                     <button type="submit" class="text-gray-600 hover:text-gray-800 text-sm">No
                                         Show</button>
                                 </form>
-                                <a href="/doctors/health-records/create?patient_id={{ appointment.patient_id }}&appointment_id={{ appointment.appointment_id }}"
-                                    class="text-green-600 hover:text-green-800 text-sm">Create Record</a>
                                 {% elif appointment.status == 'completed' %}
                                 <a href="/doctors/patients/{{ appointment.patient_id }}"
                                     class="text-blue-600 hover:text-blue-800 text-sm">View Patient</a>
@@ -126,55 +175,6 @@
         {% endif %}
     </div>
 
-    <!-- Schedule for the day -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="px-6 py-4 bg-gray-100 border-b">
-            <h2 class="font-semibold">My Schedule for {{ day_of_week | title }}</h2>
-        </div>
-
-        {% if schedules %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start
-                            Time</th>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End
-                            Time</th>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for schedule in schedules %}
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ schedule.start_time.strftime('%I:%M %p') }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ schedule.end_time.strftime('%I:%M %p') }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span
-                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        {% if schedule.is_available %} bg-green-100 text-green-800 {% else %} bg-red-100 text-red-800 {% endif %}">
-                                {{ 'Available' if schedule.is_available else 'Unavailable' }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="p-6 text-center text-gray-500">
-            No schedule set for this day. <a href="/doctors/schedule" class="text-blue-600 hover:text-blue-800">Set your
-                schedule</a>.
-        </div>
-        {% endif %}
-    </div>
+    
 </div>
 {% endblock %}

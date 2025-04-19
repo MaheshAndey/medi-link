@@ -91,16 +91,18 @@ async def login_for_access_token(
 
 
 @router.get("/logout")
-async def logout(response: Response):
-    response.delete_cookie(key="access_token")
-    return RedirectResponse(url="/login", status_code=303)
-
+async def logout():
+    redirect_response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    redirect_response.delete_cookie(key="access_token", httponly=True, samesite="lax") # Match settings used in set_cookie
+    return redirect_response
 
 @router.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request, error: Optional[str] = None):
+async def register_page(request: Request, error: Optional[str] = None, db: Session = Depends(get_db)):
+    specializations = crud.get_specializations(db)
     return templates.TemplateResponse("register.html", {
         "request": request,
-        "error": error
+        "error": error,
+        "specializations": specializations
     })
 
 
@@ -115,11 +117,13 @@ async def register_patient(request: Request,
                            address: Optional[str] = Form(None),
                            db: Session = Depends(get_db)):
     # Check if user already exists
+    specializations = crud.get_specializations(db)
     user = crud.get_user_by_email(db, email)
     if user:
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "Email already registered"
+            "error": "Email already registered",
+            "specializations": specializations
         })
 
     # Create registration data
@@ -131,7 +135,8 @@ async def register_patient(request: Request,
         except ValueError:
             return templates.TemplateResponse("register.html", {
                 "request": request,
-                "error": "Invalid date format"
+                "error": "Invalid date format",
+                "specializations": specializations
             })
 
     registration_data = schemas.PatientRegistration(email=email,
@@ -160,10 +165,12 @@ async def register_doctor(request: Request,
                           db: Session = Depends(get_db)):
     # Check if user already exists
     user = crud.get_user_by_email(db, email)
+    specializations = crud.get_specializations(db)
     if user:
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "Email already registered"
+            "error": "Email already registered",
+            "specializations": specializations
         })
 
     # Create registration data

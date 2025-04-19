@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
 
+from sqlalchemy.sql.functions import now
+
 from app import crud, schemas, models
 from app.database import get_db
 from app.dependencies import get_current_active_user, check_doctor_role, check_admin_role
@@ -175,7 +177,8 @@ def doctor_patients(
         "user": current_user,
         "doctor": doctor,
         "patients": patients,
-        "search": search
+        "search": search,
+        "now": datetime.utcnow
     })
 
 @router.get("/doctors/patients/{patient_id}", response_class=HTMLResponse)
@@ -211,7 +214,8 @@ def doctor_patient_detail(
         "doctor": doctor,
         "patient": patient,
         "health_records": health_records,
-        "appointments": appointments
+        "appointments": appointments,
+        "now": datetime.utcnow
     })
 
 @router.get("/doctors/health-records/create", response_class=HTMLResponse)
@@ -239,7 +243,8 @@ def create_health_record_form(
         "user": current_user,
         "doctor": doctor,
         "patient": patient,
-        "appointment": appointment
+        "appointment": appointment,
+        "now": datetime.utcnow
     })
 
 @router.post("/doctors/health-records/create")
