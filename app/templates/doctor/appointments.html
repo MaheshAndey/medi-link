@@ -92,21 +92,16 @@
                                         class="text-red-600 hover:text-red-800 text-sm">Cancel</button>
                                 </form>
                                 {% elif appointment.status == 'confirmed' %}
+                                <a href="/doctors/health-records/create?patient_id={{ appointment.patient_id }}&appointment_id={{ appointment.appointment_id }}"
+                                    class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">Complete</a>
                                 <form method="post"
-                                    action="/doctors/appointments/{{ appointment.appointment_id }}/update">
-                                    <input type="hidden" name="status" value="completed">
-                                    <button type="submit"
-                                        class="text-blue-600 hover:text-blue-800 text-sm">Complete</button>
-                                </form>
-                                <form method="post"
-                                    action="/doctors/appointments/{{ appointment.appointment_id }}/update">
+                                    action="/doctors/appointments/{{ appointment.appointment_id }}/update" class="inline-block">
                                     <input type="hidden" name="status" value="no_show">
-                                    <button type="submit" class="text-gray-600 hover:text-gray-800 text-sm">No
-                                        Show</button>
+                                    <button type="submit" class="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">No Show</button>
                                 </form>
                                 {% elif appointment.status == 'completed' %}
-                                <a href="/doctors/patients/{{ appointment.patient_id }}"
-                                    class="text-blue-600 hover:text-blue-800 text-sm">View Patient</a>
+                                <a href="/doctors/health-records/{{ appointment.health_records[0].record_id if appointment.health_records else '' }}"
+                                    class="text-blue-600 hover:text-blue-800 text-sm">View Health Record</a>
                                 {% else %}
                                 <span class="text-gray-400 text-sm">No actions</span>
                                 {% endif %}

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Form
+from fastapi import HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
@@ -46,6 +47,35 @@ def create_prescription_api(
         crud.create_notification(db, notification_data)
     
     return prescription_db
+
+@router.post("/{prescription_id}")
+def delete_prescription_api(
+    prescription_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_doctor_role)
+):
+    # Get prescription
+    prescription = crud.get_prescription(db, prescription_id)
+    if not prescription:
+        raise HTTPException(status_code=404, detail="Prescription not found")
+    
+    # Get health record to check authorization
+    health_record = crud.get_health_record(db, prescription.record_id)
+    if not health_record:
+        raise HTTPException(status_code=404, detail="Health record not found")
+    
+    # Check if doctor is authorized
+    doctor = crud.get_doctor_by_user_id(db, current_user.user_id)
+    if not doctor or health_record.doctor_id != doctor.doctor_id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this prescription")
+    
+    # Delete prescription
+    success = crud.delete_prescription(db, prescription_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Prescription not found")
+    
+    # Redirect to health record page
+    return RedirectResponse(url=f"/doctors/health-records/{health_record.record_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 @router.get("", response_model=List[schemas.PrescriptionResponse])
 def read_prescriptions_api(

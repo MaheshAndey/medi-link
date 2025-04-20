@@ -3,37 +3,41 @@
 {% block title %}Prescriptions - MediLink{% endblock %}
 
 {% block content %}
-<div class="container mx-auto">
-    <h1 class="text-2xl font-semibold mb-6">My Prescriptions</h1>
-    
+<div class="container mx-auto px-4 py-8"> {# Added padding #}
+    <h1 class="text-3xl font-bold mb-8 text-gray-800">My Prescriptions</h1> {# Adjusted heading style #}
+
+    {# Check if there are any health records at all #}
     {% if health_records %}
-        {% set has_prescriptions = False %}
-        {% for record in health_records %}
-            {% if record.record_id in prescriptions_by_record and prescriptions_by_record[record.record_id] %}
-                {% set has_prescriptions = True %}
-            {% endif %}
-        {% endfor %}
-        
-        {% if has_prescriptions %}
-            <div class="space-y-6">
-                {% for record in health_records %}
-                    {% if record.record_id in prescriptions_by_record and prescriptions_by_record[record.record_id] %}
-                        <div class="bg-white shadow rounded-lg overflow-hidden">
-                            <div class="px-6 py-4 bg-green-600 text-white">
-                                <h2 class="font-semibold">Prescriptions from Dr. {{ record.doctor.name }}</h2>
-                                <p class="text-sm text-green-100">{{ record.created_at.strftime('%B %d, %Y') }}</p>
-                            </div>
-                            
-                            <div class="p-6">
-                                <div class="bg-gray-50 rounded-lg">
+
+        {# Initialize a flag to track if *any* prescriptions were found and displayed #}
+        {% set found_any_prescriptions = false %}
+
+        <div class="space-y-8"> {# Increased spacing #}
+            {% for record in health_records %}
+                {# Check if this specific record has associated prescriptions AND the list is not empty #}
+                {% if record.record_id in prescriptions_by_record and prescriptions_by_record[record.record_id] %}
+
+                    {# We found at least one record with prescriptions, set the flag #}
+                    {% set found_any_prescriptions = true %}
+
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200"> {# Added border, shadow #}
+                        <div class="px-6 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white"> {# Gradient header - Green theme #}
+                            <h2 class="text-xl font-semibold">Prescriptions from Dr. {{ record.doctor.name }}</h2>
+                            <p class="text-sm text-green-100 mt-1">Visit Date: {{ record.created_at.strftime('%B %d, %Y') }}</p> {# Added "Visit Date:" prefix #}
+                        </div>
+
+                        <div class="p-6">
+                             {# Check if there are actually prescriptions in the list before showing table #}
+                            {% if prescriptions_by_record[record.record_id] %}
+                                <div class="bg-gray-50 rounded-lg border border-gray-100 mb-6"> {# Added border #}
                                     <div class="overflow-x-auto">
                                         <table class="min-w-full divide-y divide-gray-200">
                                             <thead class="bg-gray-100">
                                                 <tr>
-                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medication</th>
-                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dosage</th>
-                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instructions</th>
-                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Medication</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Dosage</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Instructions</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Duration</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="bg-white divide-y divide-gray-200">
@@ -43,13 +47,16 @@
                                                             <div class="font-medium text-gray-900">{{ prescription.medication_name }}</div>
                                                         </td>
                                                         <td class="px-6 py-4 whitespace-nowrap">
-                                                            <div class="text-sm text-gray-900">{{ prescription.dosage if prescription.dosage else 'Not specified' }}</div>
+                                                            {# Use default text if value is missing/empty #}
+                                                            <div class="text-sm text-gray-800">{{ prescription.dosage if prescription.dosage else 'N/A' }}</div>
                                                         </td>
                                                         <td class="px-6 py-4">
-                                                            <div class="text-sm text-gray-900">{{ prescription.instructions if prescription.instructions else 'Not specified' }}</div>
+                                                             {# Break long instructions, provide default text #}
+                                                            <div class="text-sm text-gray-800 whitespace-pre-wrap">{{ prescription.instructions if prescription.instructions else 'Follow doctor\'s advice' }}</div>
                                                         </td>
                                                         <td class="px-6 py-4 whitespace-nowrap">
-                                                            <div class="text-sm text-gray-900">{{ prescription.duration if prescription.duration else 'Not specified' }}</div>
+                                                            {# Use default text if value is missing/empty #}
+                                                            <div class="text-sm text-gray-800">{{ prescription.duration if prescription.duration else 'As directed' }}</div>
                                                         </td>
                                                     </tr>
                                                 {% endfor %}
@@ -57,44 +64,52 @@
                                         </table>
                                     </div>
                                 </div>
-                                
-                                <!-- Diagnosis context -->
-                                <div class="mt-4">
-                                    <h3 class="font-medium text-gray-800 mb-2">Related Diagnosis</h3>
-                                    {% if record.diagnosis %}
-                                        <p class="text-gray-600">{{ record.diagnosis }}</p>
-                                    {% else %}
-                                        <p class="text-gray-400 italic">No diagnosis recorded</p>
-                                    {% endif %}
-                                </div>
+                            {% endif %} {# End check if prescriptions_by_record[record.record_id] has items #}
+
+                            <div class="mt-4 border-t pt-4 border-gray-100"> {# Added border-top #}
+                                <h3 class="font-semibold text-gray-800 mb-2 text-base">Related Diagnosis</h3> {# Adjusted heading style #}
+                                {% if record.diagnosis %}
+                                    <p class="text-gray-700 text-sm">{{ record.diagnosis }}</p> {# Adjusted text style #}
+                                {% else %}
+                                    <p class="text-gray-500 italic text-sm">No diagnosis recorded for this visit.</p> {# Adjusted text style #}
+                                {% endif %}
                             </div>
                         </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="bg-white shadow rounded-lg p-8 text-center">
-                <span class="inline-block p-3 rounded-full bg-green-100 text-green-500 mb-4">
-                    <i data-feather="clipboard" class="w-8 h-8"></i>
-                </span>
-                <h2 class="text-xl font-medium text-gray-900 mb-2">No Prescriptions Found</h2>
-                <p class="text-gray-600 mb-6">You don't have any prescriptions in our system yet.</p>
-                <a href="/patients/appointments" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                    Book an Appointment
-                </a>
-            </div>
-        {% endif %}
+                    </div>
+                {% endif %} {# End check if record has prescriptions #}
+            {% endfor %} {# End loop through health_records #}
+
+            {# After looping through ALL records, check if the flag is still false #}
+            {# This means there were health records, but NONE of them had any prescriptions #}
+            {% if not prescriptions_by_record %}
+                <div class="bg-white shadow-sm rounded-lg p-8 text-center border border-gray-200">
+                    <span class="inline-block p-4 rounded-full bg-green-100 text-green-600 mb-5 ring-4 ring-green-50"> {# Improved icon styling - Green theme #}
+                        <i data-feather="clipboard" class="w-10 h-10"></i>
+                    </span>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">No Prescriptions Found</h2>
+                    <p class="text-gray-600 mb-6">We couldn't find any prescriptions associated with your past visits.</p>
+                     <a href="/patients/appointments" class="bg-green-600 text-white px-5 py-2.5 rounded-lg hover:bg-green-700 transition duration-150 ease-in-out text-sm font-medium shadow-sm"> {# Green button #}
+                        Book an Appointment
+                    </a>
+                </div>
+            {% endif %}
+
+        </div> {# End space-y-8 #}
+
     {% else %}
-        <div class="bg-white shadow rounded-lg p-8 text-center">
-            <span class="inline-block p-3 rounded-full bg-green-100 text-green-500 mb-4">
-                <i data-feather="clipboard" class="w-8 h-8"></i>
+        {# This block executes if health_records itself is empty or None #}
+        <div class="bg-white shadow-sm rounded-lg p-8 text-center border border-gray-200">
+            <span class="inline-block p-4 rounded-full bg-green-100 text-green-600 mb-5 ring-4 ring-green-50"> {# Improved icon styling - Green theme #}
+                <i data-feather="clipboard" class="w-10 h-10"></i>
             </span>
-            <h2 class="text-xl font-medium text-gray-900 mb-2">No Prescriptions Found</h2>
-            <p class="text-gray-600 mb-6">You don't have any prescriptions in our system yet.</p>
-            <a href="/patients/appointments" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">No Health Records Found</h2>
+            <p class="text-gray-600 mb-6">You don't have any health records or prescriptions in our system yet.</p>
+             <a href="/patients/appointments" class="bg-green-600 text-white px-5 py-2.5 rounded-lg hover:bg-green-700 transition duration-150 ease-in-out text-sm font-medium shadow-sm"> {# Green button #}
                 Book an Appointment
             </a>
         </div>
-    {% endif %}
+    {% endif %} {# End check if health_records exist #}
+
 </div>
+
 {% endblock %}

@@ -15,6 +15,37 @@ router = APIRouter(
 
 templates = Jinja2Templates(directory="app/templates")
 
+
+@router.post("/{test_id}/status")
+def update_test_status(
+    test_id: int,
+    status: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_doctor_role)
+):
+    # Get test
+    db_test = crud.get_test(db, test_id)
+    if not db_test:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    # Check if doctor is authorized
+    doctor = crud.get_doctor_by_user_id(db, current_user.user_id)
+    if not doctor or db_test.ordered_by != doctor.doctor_id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this test")
+
+    # Update test status
+    test_update = schemas.TestUpdate(status=status)
+    updated_test = crud.update_test(db, test_id, test_update)
+
+    # Get health record for redirect
+    health_record = crud.get_health_record(db, db_test.record_id)
+
+    # Redirect back to health record detail page
+    return RedirectResponse(
+        url=f"/doctors/health-records/{health_record.record_id}",
+        status_code=303
+    )
+
 @router.post("", response_model=schemas.TestResponse)
 def create_test_api(
     test: schemas.TestCreate,
@@ -159,42 +190,31 @@ def read_test_api(
     
     return test
 
-@router.put("/{test_id}", response_model=schemas.TestResponse)
-def update_test_api(
-    test_id: int,
-    test: schemas.TestUpdate,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(check_doctor_role)
-):
-    # Get test
-    db_test = crud.get_test(db, test_id)
-    if not db_test:
-        raise HTTPException(status_code=404, detail="Test not found")
+# @router.put("/{test_id}", response_model=schemas.TestResponse)
+# def update_test_api(
+#     test_id: int,
+#     test: schemas.TestUpdate,
+#     db: Session = Depends(get_db),
+#     current_user: models.User = Depends(check_doctor_role)
+# ):
+#     # Get test
+#     db_test = crud.get_test(db, test_id)
+#     if not db_test:
+#         raise HTTPException(status_code=404, detail="Test not found")
     
-    # Check if doctor is authorized (only the doctor who ordered the test can update it)
-    doctor = crud.get_doctor_by_user_id(db, current_user.user_id)
-    if not doctor or db_test.ordered_by != doctor.doctor_id:
-        raise HTTPException(status_code=403, detail="Not authorized to update this test")
+#     # Check if doctor is authorized (only the doctor who ordered the test can update it)
+#     doctor = crud.get_doctor_by_user_id(db, current_user.user_id)
+#     if not doctor or db_test.ordered_by != doctor.doctor_id:
+#         raise HTTPException(status_code=403, detail="Not authorized to update this test")
     
-    # Update test
-    updated_test = crud.update_test(db, test_id, test)
-    
-    # Create notification for patient if status changed
-    if test.status and test.status != db_test.status:
-        # Get health record
-        health_record = crud.get_health_record(db, db_test.record_id)
-        if health_record and health_record.patient:
-            patient = health_record.patient
-            if patient and patient.user_id:
-                notification_data = schemas.NotificationCreate(
-                    user_id=patient.user_id,
-                    title="Test Status Updated",
-                    message=f"Your {updated_test.test_name} test status has been updated to {updated_test.status}.",
-                    is_read=False
-                )
-                crud.create_notification(db, notification_data)
-    
-    return updated_test
+#     updated_test = crud.update_test(db, test_id, test)
+
+#     health_record = crud.get_health_record(db, db_test.record_id)
+#     # Redirect back to health record detail page
+#     return RedirectResponse(
+#         url=f"/doctors/health-records/{health_record.record_id}",
+#         status_code=303
+#     )
 
 @router.delete("/{test_id}", response_model=bool)
 def delete_test_api(
@@ -222,3 +242,34 @@ def delete_test_api(
         raise HTTPException(status_code=404, detail="Test not found")
     
     return success
+
+@router.post("/{test_id}/update", response_model=schemas.TestResponse)
+def update_test_results(
+    test_id: int,
+    result: str = Form(...),
+    report_url: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_doctor_role)
+):
+    # Get test
+    db_test = crud.get_test(db, test_id)
+    if not db_test:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    # Check if doctor is authorized
+    doctor = crud.get_doctor_by_user_id(db, current_user.user_id)
+    if not doctor or db_test.ordered_by != doctor.doctor_id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this test")
+
+    # Update test results and report URL
+    test_update = schemas.TestUpdate(result=result, report_url=report_url, status="completed")
+    updated_test = crud.update_test(db, test_id, test_update)
+
+    # Get health record for redirect
+    health_record = crud.get_health_record(db, db_test.record_id)
+
+    # Redirect back to health record detail page
+    return RedirectResponse(
+        url=f"/doctors/health-records/{health_record.record_id}",
+        status_code=303
+    )

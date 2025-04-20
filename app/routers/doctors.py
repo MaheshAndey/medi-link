@@ -133,6 +133,39 @@ def doctor_appointments(
         "today_date": today
     })
 
+@router.post("/api/health-records/{record_id}")
+def update_health_record(
+    record_id: int,
+    symptoms: Optional[str] = Form(None),
+    diagnosis: Optional[str] = Form(None),
+    notes: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_doctor_role)
+):
+    doctor = crud.get_doctor_by_user_id(db, current_user.user_id)
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+    
+    # Verify the health record exists and belongs to this doctor
+    health_record = db.query(models.HealthRecord).filter(
+        models.HealthRecord.record_id == record_id,
+        models.HealthRecord.doctor_id == doctor.doctor_id
+    ).first()
+    
+    if not health_record:
+        raise HTTPException(status_code=404, detail="Health record not found")
+    
+    # Update health record
+    health_record_update = schemas.HealthRecordUpdate(
+        symptoms=symptoms,
+        diagnosis=diagnosis,
+        notes=notes
+    )
+    
+    updated_record = crud.update_health_record(db, record_id, health_record_update)
+    
+    return RedirectResponse(url=f"/doctors/health-records/{record_id}", status_code=303)
+
 @router.post("/doctors/appointments/{appointment_id}/update")
 def update_appointment_status(
     appointment_id: int,
@@ -273,7 +306,8 @@ def create_health_record_form(
     })
 
 @router.post("/doctors/health-records/create")
-def create_health_record(
+async def create_health_record(
+    request: Request,
     patient_id: int = Form(...),
     appointment_id: Optional[int] = Form(None),
     symptoms: Optional[str] = Form(None),
@@ -298,6 +332,34 @@ def create_health_record(
     
     health_record = crud.create_health_record(db, health_record_data)
     
+    # Get form data for prescriptions
+    form_data = await request.form()
+    
+    # Process multiple prescriptions
+    prescription_indices = set()
+    
+    # First collect all valid prescription indices
+    for key in form_data.keys():
+        if key.startswith('prescriptions[') and key.endswith('][medication_name]'):
+            try:
+                index = int(key[14:-18])  # Extract index from prescriptions[X][medication_name]
+                prescription_indices.add(index)
+            except ValueError:
+                continue
+    
+    # Process each valid prescription index
+    for index in sorted(prescription_indices):
+        medication_name = form_data.get(f'prescriptions[{index}][medication_name]')
+        if medication_name and medication_name.strip():  # Only create prescription if medication name is provided and not empty
+            prescription = schemas.PrescriptionCreate(
+                record_id=health_record.record_id,
+                medication_name=medication_name.strip(),
+                dosage=form_data.get(f'prescriptions[{index}][dosage]', '').strip(),
+                duration=form_data.get(f'prescriptions[{index}][duration]', '').strip(),
+                instructions=form_data.get(f'prescriptions[{index}][instructions]', '').strip()
+            )
+            crud.create_prescription(db, prescription)
+    
     # Update appointment status if provided
     if appointment_id:
         appointment_update = schemas.AppointmentUpdate(status=schemas.AppointmentStatus.completed)
@@ -309,7 +371,7 @@ def create_health_record(
         notification_data = schemas.NotificationCreate(
             user_id=patient.user_id,
             title="New Health Record",
-            message=f"Dr. {doctor.name} has created a new health record for you.",
+            message=f"Dr. {doctor.name} has created a new health record with prescription for you.",
             is_read=False
         )
         crud.create_notification(db, notification_data)
@@ -343,7 +405,8 @@ def view_health_record(
         "doctor": doctor,
         "health_record": health_record,
         "prescriptions": prescriptions,
-        "tests": tests
+        "tests": tests,
+        "now": datetime.utcnow
     })
 
 @router.post("/doctors/prescriptions/create")
@@ -510,6 +573,76 @@ def create_schedule(
     )
     crud.create_schedule(db, schedule_data)
 
+    return RedirectResponse(url="/doctors/schedule", status_code=303)
+
+@router.post("/doctors/schedule/{schedule_id}/edit")
+def edit_schedule(
+    schedule_id: int,
+    day: str = Form(...),
+    start_time: str = Form(...),
+    end_time: str = Form(...),
+    is_available: bool = Form(True),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_doctor_role)
+):
+    doctor = crud.get_doctor_by_user_id(db, current_user.user_id)
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+    
+    # Verify schedule belongs to this doctor
+    schedule = db.query(models.DoctorSchedule).filter(
+        models.DoctorSchedule.schedule_id == schedule_id,
+        models.DoctorSchedule.doctor_id == doctor.doctor_id
+    ).first()
+    
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    
+    try:
+        start = datetime.strptime(start_time, "%H:%M").time()
+        end = datetime.strptime(end_time, "%H:%M").time()
+        
+        if start >= end:
+            raise ValueError("Start time must be before end time")
+        
+        # Update schedule
+        schedule_update = schemas.DoctorScheduleUpdate(
+            day=day.lower(),
+            start_time=start,
+            end_time=end,
+            is_available=is_available
+        )
+        crud.update_schedule(db, schedule_id, schedule_update)
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    return RedirectResponse(url="/doctors/schedule", status_code=303)
+
+@router.post("/doctors/schedule/{schedule_id}/delete")
+def delete_schedule(
+    schedule_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_doctor_role)
+):
+    doctor = crud.get_doctor_by_user_id(db, current_user.user_id)
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+    
+    # Verify schedule belongs to this doctor
+    schedule = db.query(models.DoctorSchedule).filter(
+        models.DoctorSchedule.schedule_id == schedule_id,
+        models.DoctorSchedule.doctor_id == doctor.doctor_id
+    ).first()
+    
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    
+    # Delete schedule
+    success = crud.delete_schedule(db, schedule_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete schedule")
+    
     return RedirectResponse(url="/doctors/schedule", status_code=303)
 
 # Routes requiring admin role

@@ -162,7 +162,7 @@ def patient_prescriptions(
     prescriptions_by_record = {}
     for record in health_records:
         prescriptions_by_record[record.record_id] = crud.get_record_prescriptions(db, record.record_id)
-    
+    print(prescriptions_by_record)
     return templates.TemplateResponse("patient/prescriptions.html", {
         "request": request,
         "user": current_user,

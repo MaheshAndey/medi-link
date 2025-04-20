@@ -4,12 +4,12 @@
 
 {% block content %}
 <div class="container mx-auto">
-    <div class="mb-6">
+    <!-- <div class="mb-6">
         <a href="/doctors/patients/{{ patient.patient_id }}" class="text-blue-600 hover:text-blue-800 flex items-center">
             <i data-feather="arrow-left" class="h-4 w-4 mr-1"></i> Back to Patient
         </a>
     </div>
-    
+     -->
     <h1 class="text-2xl font-semibold mb-6">Create Health Record</h1>
     
     <!-- Patient Information -->
@@ -38,7 +38,7 @@
         </div>
         
         <div class="p-6">
-            <form method="post" action="/doctors/health-records/create">
+            <form method="post" action="/doctors/health-records/create" id="healthRecordForm">
                 <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
                 {% if appointment %}
                     <input type="hidden" name="appointment_id" value="{{ appointment.appointment_id }}">
@@ -64,14 +64,122 @@
                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
                     <p class="text-sm text-gray-500 mt-1">Any additional notes or observations</p>
                 </div>
+
+                <!-- Prescriptions Section -->
+                <div class="mb-6 border-t pt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium">Prescriptions</h3>
+                        <button type="button" onclick="addPrescription()" 
+                                class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <i data-feather="plus" class="h-4 w-4 inline-block mr-1"></i> Add Prescription
+                        </button>
+                    </div>
+                    
+                    <div id="prescriptions-container">
+                        <!-- Prescription template will be added here -->
+                    </div>
+                </div>
                 
                 <div class="flex justify-end">
                     <button type="submit" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
-                        Create Health Record
+                        Create Health Record with Prescriptions
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Prescription Template -->
+<template id="prescription-template">
+    <div class="prescription-item bg-gray-50 p-4 rounded-lg mb-4">
+        <div class="flex justify-between items-start mb-4">
+            <h4 class="text-md font-medium">Prescription #<span class="prescription-number"></span></h4>
+            <button type="button" onclick="removePrescription(this)" 
+                    class="text-red-500 hover:text-red-700 focus:outline-none">
+                <i data-feather="trash-2" class="h-4 w-4"></i>
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-gray-700 font-medium mb-2">Medication Name</label>
+                <input type="text" name="prescriptions[${prescriptionCount-1}][medication_name]" required
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 font-medium mb-2">Dosage</label>
+                <input type="text" name="prescriptions[${prescriptionCount-1}][dosage]" 
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="E.g., 1 tablet twice daily">
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 font-medium mb-2">Duration</label>
+                <input type="text" name="prescriptions[${prescriptionCount-1}][duration]" 
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="E.g., 7 days, 2 weeks">
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 font-medium mb-2">Instructions</label>
+                <textarea name="prescriptions[${prescriptionCount-1}][instructions]" rows="2" 
+                          class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                          placeholder="Special instructions for taking the medication"></textarea>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+let prescriptionCount = 0;
+
+function addPrescription() {
+    prescriptionCount++;
+    const template = document.getElementById('prescription-template');
+    const container = document.getElementById('prescriptions-container');
+    const clone = template.content.cloneNode(true);
+    
+    // Update prescription number
+    clone.querySelector('.prescription-number').textContent = prescriptionCount;
+    
+    // Update field names with current index
+    clone.querySelectorAll('input, textarea').forEach(field => {
+        const name = field.getAttribute('name');
+        if (name) {
+            field.setAttribute('name', name.replace('${prescriptionCount-1}', prescriptionCount-1));
+        }
+    });
+    
+    // Add the new prescription form
+    container.appendChild(clone);
+    
+    // Reinitialize Feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+}
+
+function removePrescription(button) {
+    const prescriptionItem = button.closest('.prescription-item');
+    prescriptionItem.remove();
+    
+    // Reindex remaining prescriptions
+    const prescriptionItems = document.querySelectorAll('.prescription-item');
+    prescriptionItems.forEach((item, index) => {
+        item.querySelector('.prescription-number').textContent = index + 1;
+        item.querySelectorAll('input, textarea').forEach(field => {
+            const name = field.getAttribute('name');
+            if (name) {
+                field.setAttribute('name', name.replace(/prescriptions\[\d+\]/, `prescriptions[${index}]`));
+            }
+        });
+    });
+    prescriptionCount = prescriptionItems.length;
+}
+
+// Add initial prescription form
+addPrescription();
+</script>
 {% endblock %}

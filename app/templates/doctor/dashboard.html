@@ -12,12 +12,12 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
         <!-- Today's Appointments -->
-        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col">
+        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col h-full">
             <div class="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
                 <h2 class="font-semibold text-lg">Today's Appointments</h2>
                 <a href="/doctors/appointments" class="text-sm bg-white text-blue-600 px-3 py-1 rounded hover:bg-blue-100">View All</a>
             </div>
-            <div class="p-6 flex items-center justify-center">
+            <div class="p-6 flex-1 flex items-center justify-center min-h-[120px]">
                 {% if today_appointments %}
                     <div class="text-center">
                         <p class="text-5xl font-bold text-blue-600">{{ today_appointments | length }}</p>
@@ -30,12 +30,12 @@
         </div>
 
         <!-- Pending Appointments -->
-        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col">
+        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col h-full">
             <div class="px-6 py-4 bg-yellow-600 text-white flex justify-between items-center">
                 <h2 class="font-semibold text-lg">Pending Appointments</h2>
                 <a href="/doctors/appointments" class="text-sm bg-white text-yellow-600 px-3 py-1 rounded hover:bg-yellow-100">View All</a>
             </div>
-            <div class="p-6 flex items-center justify-center">
+            <div class="p-6 flex-1 flex items-center justify-center min-h-[120px]">
                 {% if pending_appointments %}
                     <div class="text-center">
                         <p class="text-5xl font-bold text-yellow-600">{{ pending_appointments | length }}</p>
@@ -48,27 +48,40 @@
         </div>
 
         <!-- Today's Schedule -->
-        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col">
+        <div class="bg-white shadow rounded-lg overflow-hidden flex flex-col h-full">
             <div class="px-6 py-4 bg-green-600 text-white flex justify-between items-center">
                 <h2 class="font-semibold text-lg">Today's Schedule</h2>
                 <a href="/doctors/schedule" class="text-sm bg-white text-green-600 px-3 py-1 rounded hover:bg-green-100">View Full Schedule</a>
             </div>
-            <div class="p-6">
+            <div class="p-6 flex-1">
                 {% if today_schedule %}
-                    {% for slot in today_schedule %}
-                        <div class="mb-4 pb-4 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
-                            <div class="flex justify-between">
-                                <span class="text-gray-500 text-sm">{{ slot.start_time.strftime('%I:%M %p') }} - {{ slot.end_time.strftime('%I:%M %p') }}</span>
+                    <div class="space-y-3">
+                        {% for slot in today_schedule %}
+                            <div class="flex items-center justify-between bg-gray-50 rounded p-3 hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-green-600 w-5 h-5">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </span>
+                                    <span class="text-gray-700">{{ slot.start_time.strftime('%I:%M %p') }} - {{ slot.end_time.strftime('%I:%M %p') }}</span>
+                                </div>
+                                <span class="text-sm text-green-600 font-medium px-3 py-1 bg-green-50 rounded">Available</span>
                             </div>
-                            <p class="text-sm text-gray-600 mt-1">Available for appointments</p>
-                        </div>
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
                 {% else %}
-                    <p class="text-gray-500 text-center">No schedule available for today</p>
+                    <div class="flex items-center justify-center h-full min-h-[120px]">
+                        <div class="flex flex-col items-center">
+                            <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <p class="mt-3 text-gray-500">No schedule available for today</p>
+                        </div>
+                    </div>
                 {% endif %}
             </div>
         </div>
-
     </div>
 
     <!-- Scrollable Doctor Information Section -->
