@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Processing Payment...</title>
+    <meta charset="UTF-8">
+    <script>
+      // Simulate successful payment
+      setTimeout(() => {
+          const data = sessionStorage.getItem("appointmentFormData");
+          if (data) {
+              localStorage.setItem("paidAppointmentData", data); // store temporarily
+              sessionStorage.removeItem("appointmentFormData");
+              window.location.href = "/patients/appointments";
+          }
+      }, 2000); // simulate delay
+  </script>
+</head>
+<body class="flex items-center justify-center h-screen bg-white">
+    <div class="text-center">
+        <div class="mb-4 text-xl font-medium text-gray-800">Processing your payment...</div>
+        <div class="text-gray-600">Please wait while we confirm your payment.</div>
+    </div>
+</body>
+</html>

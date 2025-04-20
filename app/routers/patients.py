@@ -74,19 +74,22 @@ def book_appointment(
     appointment_time: str = Form(...),
     reason: Optional[str] = Form(None),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(check_patient_role)
+    current_user: models.User = Depends(check_patient_role),
 ):
+    from datetime import datetime
+    from app.schemas import BillingCreate, BillingStatus
+
+    # Get patient object from current user
     patient = crud.get_patient_by_user_id(db, current_user.user_id)
     if not patient:
         raise HTTPException(status_code=404, detail="Patient profile not found")
-    
+
     # Combine date and time into a datetime object
-    from datetime import datetime
     try:
         appointment_datetime = datetime.strptime(f"{appointment_date} {appointment_time}", "%Y-%m-%d %H:%M")
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date or time format")
-    
+
     # Create appointment
     appointment_data = schemas.AppointmentCreate(
         patient_id=patient.patient_id,
@@ -95,9 +98,18 @@ def book_appointment(
         reason=reason,
         status=schemas.AppointmentStatus.scheduled
     )
-    
     appointment = crud.create_appointment(db, appointment_data)
-    
+
+    # Create billing (hardcoded ₹500 as per your UI)
+    billing_data = BillingCreate(
+        patient_id=patient.patient_id,
+        appointment_id=appointment.appointment_id,
+        amount=500.0,
+        status=BillingStatus.paid,  # You can use BillingStatus.pending if appropriate
+        payment_method="Online"
+    )
+    crud.create_billing(db, billing_data)
+
     # Create notification for doctor
     doctor = crud.get_doctor(db, doctor_id)
     if doctor and doctor.user_id:
@@ -108,8 +120,10 @@ def book_appointment(
             is_read=False
         )
         crud.create_notification(db, notification_data)
+
     
     return RedirectResponse(url="/patients/appointments", status_code=303)
+
 
 @router.get("/patients/health-records", response_class=HTMLResponse)
 def patient_health_records(
@@ -230,7 +244,8 @@ def add_insurance(
     coverage_details: Optional[str] = Form(None),
     valid_until: Optional[str] = Form(None),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(check_patient_role)
+    current_user: models.User = Depends(check_patient_role),
+    
 ):
     patient = crud.get_patient_by_user_id(db, current_user.user_id)
     if not patient:
@@ -354,3 +369,9 @@ def delete_patient_api(
     if not success:
         raise HTTPException(status_code=404, detail="Patient not found")
     return success
+
+
+
+@router.get("/patients/appointments/pay", response_class=HTMLResponse)
+async def simulate_payment(request: Request):
+    return templates.TemplateResponse("patient/payment_loading.html", {"request": request})
