@@ -14,10 +14,8 @@
 
         <div class="space-y-8"> {# Increased spacing between record blocks #}
             {% for record in health_records %}
-                {# Check if this specific record has associated tests AND the list of tests is not empty #}
                 {% if record.record_id in tests_by_record and tests_by_record[record.record_id] %}
 
-                    {# We found at least one record with tests, set the flag #}
                     {% set found_any_tests = true %}
 
                     <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200"> {# Added subtle border #}

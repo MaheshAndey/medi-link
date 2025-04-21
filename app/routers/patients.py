@@ -3,10 +3,12 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import date
 
 from app import crud, schemas, models
 from app.database import get_db
 from app.dependencies import get_current_active_user, check_patient_role, check_doctor_or_admin_role, check_admin_role
+from datetime import datetime, timedelta
 
 router = APIRouter(
     tags=["patients"]
@@ -234,7 +236,9 @@ def patient_insurance(
         "request": request,
         "user": current_user,
         "patient": patient,
-        "insurances": insurances
+        "insurances": insurances,
+        "now": datetime.utcnow(),
+        "datetime":datetime
     })
 
 @router.post("/patients/insurance/add")
@@ -272,6 +276,73 @@ def add_insurance(
     insurance = crud.create_insurance(db, insurance_data)
     
     return RedirectResponse(url="/patients/insurance", status_code=303)
+
+
+@router.post("/patients/insurance/{insurance_id}/update")
+def update_insurance(
+    insurance_id: int,
+    provider_name: str = Form(...),
+    policy_number: str = Form(...),
+    coverage_details: Optional[str] = Form(None),
+    valid_until: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_patient_role),
+):
+    patient = crud.get_patient_by_user_id(db, current_user.user_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient profile not found")
+
+    db_insurance = crud.get_insurance(db, insurance_id)
+    if not db_insurance or db_insurance.patient_id != patient.patient_id:
+        raise HTTPException(status_code=404, detail="Insurance not found or access denied")
+
+    # Parse valid_until date
+    valid_until_date: Optional[date] = None
+    if valid_until:
+        try:
+            valid_until_date = datetime.strptime(valid_until, "%Y-%m-%d").date()
+        except ValueError:
+            # Allow empty string or invalid format to be treated as None, or raise error?
+            # For now, let's treat invalid format as an error.
+             raise HTTPException(status_code=400, detail="Invalid date format for 'valid_until'. Use YYYY-MM-DD.")
+
+
+    insurance_update_data = schemas.InsuranceUpdate(
+        provider_name=provider_name,
+        policy_number=policy_number,
+        coverage_details=coverage_details,
+        valid_until=valid_until_date
+    )
+
+    updated_insurance = crud.update_insurance(db, insurance_id=insurance_id, insurance_update=insurance_update_data)
+    if not updated_insurance:
+         # This case might be redundant if get_insurance already checked, but good practice
+        raise HTTPException(status_code=404, detail="Insurance not found during update")
+
+    return RedirectResponse(url="/patients/insurance", status_code=303)
+
+
+@router.post("/patients/insurance/{insurance_id}/delete")
+def delete_insurance(
+    insurance_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(check_patient_role),
+):
+    patient = crud.get_patient_by_user_id(db, current_user.user_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient profile not found")
+
+    db_insurance = crud.get_insurance(db, insurance_id)
+    if not db_insurance or db_insurance.patient_id != patient.patient_id:
+        raise HTTPException(status_code=404, detail="Insurance not found or access denied")
+
+    success = crud.delete_insurance(db, insurance_id=insurance_id)
+    if not success:
+        # This might happen if the insurance was deleted between the check and the delete call
+        raise HTTPException(status_code=404, detail="Insurance not found during deletion")
+
+    return RedirectResponse(url="/patients/insurance", status_code=303)
+
 
 # Routes requiring doctor or admin role
 @router.get("/admin/patients", response_class=HTMLResponse)

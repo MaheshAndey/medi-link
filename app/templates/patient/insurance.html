@@ -31,7 +31,7 @@
                             <p class="font-medium">
                                 {% if insurance.valid_until %}
                                     {{ insurance.valid_until.strftime('%B %d, %Y') }}
-                                    {% if insurance.valid_until < now().date() %}
+                                    {% if insurance.valid_until < datetime.now().date() %}
                                         <span class="text-xs text-red-600 ml-2">Expired</span>
                                     {% endif %}
                                 {% else %}
@@ -213,7 +213,7 @@
     
     function showEditModal(id, provider, policy, coverage, validUntil) {
         const form = document.getElementById('editForm');
-        form.action = `/api/insurance/${id}`;
+        form.action = `/patients/insurance/${id}/update`;
         
         document.getElementById('edit_provider_name').value = provider;
         document.getElementById('edit_policy_number').value = policy;
@@ -229,7 +229,7 @@
     
     function showDeleteModal(id) {
         const form = document.getElementById('deleteForm');
-        form.action = `/api/insurance/${id}`;
+        form.action = `/patients/insurance/${id}/delete`;
         
         document.getElementById('deleteModal').classList.remove('hidden');
     }
