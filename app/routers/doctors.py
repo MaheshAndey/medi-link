@@ -399,6 +399,12 @@ def view_health_record(
     # Get tests
     tests = crud.get_record_tests(db, record_id)
     
+    feedback = None
+    if health_record.appointment_id:
+        feedback = db.query(models.Feedback).filter(
+            models.Feedback.appointment_id == health_record.appointment_id
+        ).first()
+    
     return templates.TemplateResponse("doctor/health_record_detail.html", {
         "request": request,
         "user": current_user,
@@ -406,7 +412,8 @@ def view_health_record(
         "health_record": health_record,
         "prescriptions": prescriptions,
         "tests": tests,
-        "now": datetime.utcnow
+        "now": datetime.utcnow,
+        "feedback": feedback
     })
 
 @router.post("/doctors/prescriptions/create")

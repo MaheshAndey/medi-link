@@ -438,6 +438,9 @@ def get_doctor_feedbacks(db: Session, doctor_id: int):
 def get_patient_feedbacks(db: Session, patient_id: int):
     return db.query(models.Feedback).filter(models.Feedback.patient_id == patient_id).all()
 
+def get_feedback_by_appointment_id(db: Session, appointment_id: int):
+    return db.query(models.Feedback).filter(models.Feedback.appointment_id == appointment_id).first()
+
 def create_feedback(db: Session, feedback: schemas.FeedbackCreate):
     db_feedback = models.Feedback(**feedback.dict())
     db.add(db_feedback)
