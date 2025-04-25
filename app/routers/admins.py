@@ -114,27 +114,27 @@ def admin_doctor_detail(
         sqlalchemy.orm.joinedload(models.Doctor.specialization),
         sqlalchemy.orm.joinedload(models.Doctor.appointments).joinedload(models.Appointment.patient),
         sqlalchemy.orm.joinedload(models.Doctor.health_records).joinedload(models.HealthRecord.patient),
-        sqlalchemy.orm.joinedload(models.Doctor.feedbacks).joinedload(models.Feedback.patient)
+        sqlalchemy.orm.joinedload(models.Doctor.feedbacks).joinedload(models.Feedback.patient),
+        sqlalchemy.orm.joinedload(models.Doctor.schedules)
     ).filter(models.Doctor.doctor_id == doctor_id).first()
-    
+
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
-    
+
     # Get all specializations for dropdown in edit form
     specializations = crud.get_specializations(db)
-    
+
     # Get upcoming appointments
     upcoming_appointments = db.query(models.Appointment).filter(
         models.Appointment.doctor_id == doctor_id,
         models.Appointment.appointment_time > datetime.now()
     ).order_by(models.Appointment.appointment_time).limit(5).all()
-    
+
     # Get past appointments
     past_appointments = db.query(models.Appointment).filter(
         models.Appointment.doctor_id == doctor_id,
         models.Appointment.appointment_time <= datetime.now()
     ).order_by(models.Appointment.appointment_time.desc()).limit(10).all()
-    
     return templates.TemplateResponse("admin/doctor_detail.html", {
         "request": request,
         "user": current_user,
@@ -143,6 +143,7 @@ def admin_doctor_detail(
         "specializations": specializations,
         "upcoming_appointments": upcoming_appointments,
         "past_appointments": past_appointments,
+        "schedule": doctor.schedules,
         "now": datetime.now
     })
 

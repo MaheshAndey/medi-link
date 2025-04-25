@@ -67,7 +67,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {% if appointment.status in ['scheduled', 'confirmed'] %}
+                            {% if appointment.status in ['scheduled'] %}
                             <button class="text-red-600 hover:text-red-900"
                                 onclick="cancelAppointment({{ appointment.appointment_id }})">Cancel</button>
                             {% elif appointment.status == 'completed' and not appointment.feedbacks %}
@@ -294,7 +294,7 @@
     }
 
     function cancelAppointment(appointmentId) {
-        document.getElementById('cancelForm').action = `/api/appointments/${appointmentId}`;
+        document.getElementById('cancelForm').action = `/api/appointments/${appointmentId}/cancel`;
         document.getElementById('cancelModal').classList.remove('hidden');
     }
 

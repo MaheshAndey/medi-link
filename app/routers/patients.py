@@ -82,7 +82,7 @@ def book_appointment(
     appointment_date: str = Form(...),
     appointment_time: str = Form(...),
     reason: Optional[str] = Form(None),
-    insurance_id: Optional[int] = Form(None), # Add insurance_id form field
+    insurance_id = Form(None), # Add insurance_id form field
     db: Session = Depends(get_db),
     current_user: models.User = Depends(check_patient_role),
 ):

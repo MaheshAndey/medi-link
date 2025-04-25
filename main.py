@@ -1,10 +1,12 @@
 import os
 import logging
+import os
+import logging
 from fastapi import FastAPI, Request, Depends, status
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse # Added HTMLResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from dotenv import load_dotenv
 
@@ -85,7 +87,8 @@ async def root(request: Request, current_user=Depends(get_current_user)):
             return RedirectResponse(url="/doctors/dashboard")
         elif current_user.role == "admin":
             return RedirectResponse(url="/admins/dashboard")
-    return RedirectResponse(url="/login", status_code=303)
+    # If no user is logged in, show the home page
+    return templates.TemplateResponse("home.html", {"request": request})
 
 if __name__ == "__main__":
     import uvicorn

@@ -3,22 +3,88 @@
 <head>
     <title>Processing Payment...</title>
     <meta charset="UTF-8">
+    <!-- Add Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Simple scale-up animation for the checkmark */
+        .checkmark-animate {
+            transform: scale(0);
+            transition: transform 0.3s ease-out;
+        }
+        .checkmark-animate.visible {
+            transform: scale(1);
+        }
+    </style>
     <script>
-      // Simulate successful payment
-      setTimeout(() => {
+      function handlePaymentSuccess() {
+          const loadingContainer = document.getElementById('loadingContainer');
+          const successContainer = document.getElementById('successContainer');
+          const checkmark = document.getElementById('checkmark');
+
           const data = sessionStorage.getItem("appointmentFormData");
           if (data) {
               localStorage.setItem("paidAppointmentData", data); // store temporarily
               sessionStorage.removeItem("appointmentFormData");
-              window.location.href = "/patients/appointments";
+
+              // Hide loading, show success
+              if (loadingContainer) loadingContainer.classList.add('hidden');
+              if (successContainer) successContainer.classList.remove('hidden');
+
+              // Trigger checkmark animation
+              if (checkmark) {
+                  // Needs a slight delay for transition to register after display change
+                  requestAnimationFrame(() => {
+                      requestAnimationFrame(() => {
+                          checkmark.classList.add('visible');
+                      });
+                  });
+              }
+
+              // Redirect after a short delay to show the checkmark
+              setTimeout(() => {
+                  window.location.href = "/patients/appointments";
+              }, 1500); // Wait 1.5 seconds after showing checkmark
+          } else {
+              // Handle case where data is missing (optional)
+              console.error("Appointment form data not found in sessionStorage.");
+              // Maybe redirect to an error page or back
           }
-      }, 2000); // simulate delay
+      }
+
+      // Simulate successful payment
+      setTimeout(handlePaymentSuccess, 3000); // Simulate 3 second delay
   </script>
 </head>
-<body class="flex items-center justify-center h-screen bg-white">
-    <div class="text-center">
-        <div class="mb-4 text-xl font-medium text-gray-800">Processing your payment...</div>
-        <div class="text-gray-600">Please wait while we confirm your payment.</div>
+<body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
+    <div class="text-center p-10 bg-white rounded-lg shadow-xl max-w-md mx-auto">
+        <!-- Loading State -->
+        <div id="loadingContainer">
+            <!-- Spinner -->
+            <div class="mb-6">
+                <svg class="animate-spin h-12 w-12 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <!-- Text Content -->
+            <h1 class="text-2xl font-semibold text-gray-800 mb-3">Processing Your Payment</h1>
+            <p class="text-gray-600">Please wait a moment while we securely confirm your transaction.</p>
+            <p class="text-sm text-gray-500 mt-4">Do not close or refresh this page.</p>
+        </div>
+
+        <!-- Success State (Initially Hidden) -->
+        <div id="successContainer" class="hidden">
+            <!-- Checkmark -->
+            <div class="mb-6">
+                <svg id="checkmark" class="checkmark-animate h-16 w-16 text-green-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <!-- Text Content -->
+            <h1 class="text-2xl font-semibold text-gray-800 mb-3">Payment Successful!</h1>
+            <p class="text-gray-600">Your transaction has been completed.</p>
+            <p class="text-sm text-gray-500 mt-4">Redirecting you shortly...</p>
+        </div>
     </div>
 </body>
 </html>

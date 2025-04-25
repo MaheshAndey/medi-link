@@ -5,7 +5,11 @@
 {% block auth_content %}
 <div class="bg-white p-8 rounded-lg shadow-md">
     <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-blue-600">MediLink</h1>
+        <div class="flex items-center justify-center mb-2">
+            <h1 class="text-3xl font-bold text-indigo-800">Medi</h1>
+            <img src="/static/images/link.svg" alt="MediLink Logo" class="w-5 h-5 drop-shadow-lg ml-1 mr-1">
+            <h1 class="text-3xl font-bold text-indigo-800">Link</h1>
+        </div>
         <p class="text-gray-600">Healthcare Management System</p>
     </div>
     
@@ -47,13 +51,13 @@
         </p>
     </div>
     
-    <div class="mt-4 border-t pt-4">
+    <!-- <div class="mt-4 border-t pt-4">
         <div class="bg-blue-50 p-3 rounded-lg">
             <p class="text-sm text-gray-700 mb-1 font-semibold">Default Admin Credentials:</p>
             <p class="text-sm text-gray-600">Email: {{ DEFAULT_ADMIN_EMAIL }}</p>
             <p class="text-sm text-gray-600">Password: {{ DEFAULT_ADMIN_PASSWORD }}</p>
             <p class="text-xs text-gray-500 mt-2 italic">These credentials are automatically created on first startup.</p>
         </div>
-    </div>
+    </div> -->
 </div>
 {% endblock %}

@@ -64,29 +64,22 @@
         <div class="px-6 py-4 bg-purple-600 text-white flex justify-between items-center">
             <h2 class="font-semibold">Weekly Schedule</h2>
         </div>
-        
+
         <div class="p-6">
-            {% if schedules %}
+            {% if doctor.schedules %}
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {% for day in days %}
+                    {% for sch in doctor.schedules %}
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <h3 class="font-medium text-gray-800 mb-3 capitalize">{{ day }}</h3>
-                            
-                            {% if day in schedule_by_day and schedule_by_day[day]|length > 0 %}
-                                <ul class="space-y-2">
-                                    {% for schedule in schedule_by_day[day] %}
-                                        <li class="text-sm flex justify-between">
-                                            <span>{{ schedule.start_time.strftime('%I:%M %p') }} - {{ schedule.end_time.strftime('%I:%M %p') }}</span>
-                                            <span class="px-2 text-xs font-semibold rounded-full 
-                                                {% if schedule.is_available %} bg-green-100 text-green-800 {% else %} bg-red-100 text-red-800 {% endif %}">
-                                                {{ 'Available' if schedule.is_available else 'Unavailable' }}
-                                            </span>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                <p class="text-sm text-gray-500 text-center">No schedule set</p>
-                            {% endif %}
+                            <h3 class="font-medium text-gray-800 mb-3 capitalize">{{ sch.day }}</h3>
+                            <ul class="space-y-2">
+                                <li class="text-sm flex justify-between">
+                                    <span>{{ sch.start_time.strftime('%I:%M %p') }} - {{ sch.end_time.strftime('%I:%M %p') }}</span>
+                                    <span class="px-2 text-xs font-semibold rounded-full 
+                                        {% if sch.is_available %} bg-green-100 text-green-800 {% else %} bg-red-100 text-red-800 {% endif %}">
+                                        {{ 'Available' if sch.is_available else 'Unavailable' }}
+                                    </span>
+                                </li>
+                            </ul>
                         </div>
                     {% endfor %}
                 </div>
@@ -97,91 +90,7 @@
             {% endif %}
         </div>
     </div>
-    
-    <!-- Appointment History -->
-    <div class="bg-white shadow rounded-lg overflow-hidden mb-8">
-        <div class="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
-            <h2 class="font-semibold">Recent Appointments</h2>
-            <a href="/admins/appointments?doctor_id={{ doctor.doctor_id }}" class="text-sm bg-white text-blue-600 px-3 py-1 rounded hover:bg-blue-100">View All</a>
-        </div>
-        
-        <div class="p-6">
-            {% if appointments %}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            {% for appointment in appointments[:10] %}
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">{{ appointment.appointment_time.strftime('%b %d, %Y') }}</div>
-                                        <div class="text-sm text-gray-500">{{ appointment.appointment_time.strftime('%I:%M %p') }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="font-medium text-gray-900">{{ appointment.patient.name }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            {% if appointment.status == 'scheduled' %} bg-yellow-100 text-yellow-800 
-                                            {% elif appointment.status == 'confirmed' %} bg-green-100 text-green-800 
-                                            {% elif appointment.status == 'completed' %} bg-blue-100 text-blue-800 
-                                            {% elif appointment.status == 'cancelled' %} bg-red-100 text-red-800 
-                                            {% elif appointment.status == 'no_show' %} bg-gray-100 text-gray-800 
-                                            {% endif %}">
-                                            {{ appointment.status | title }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm text-gray-900">{{ appointment.reason if appointment.reason else 'Not specified' }}</div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="text-center text-gray-500">
-                    No appointment history found.
-                </div>
-            {% endif %}
-        </div>
-    </div>
-    
-    <!-- Patient Stats -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="px-6 py-4 bg-green-600 text-white">
-            <h2 class="font-semibold">Statistics</h2>
-        </div>
-        
-        <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-                <div class="p-4 rounded-lg bg-blue-50">
-                    <p class="text-sm text-gray-600">Total Patients</p>
-                    <p class="text-2xl font-bold text-blue-600">{{ patient_count }}</p>
-                </div>
-                <div class="p-4 rounded-lg bg-green-50">
-                    <p class="text-sm text-gray-600">Completed Appointments</p>
-                    <p class="text-2xl font-bold text-green-600">{{ completed_appointments }}</p>
-                </div>
-                <div class="p-4 rounded-lg bg-yellow-50">
-                    <p class="text-sm text-gray-600">Pending Appointments</p>
-                    <p class="text-2xl font-bold text-yellow-600">{{ pending_appointments }}</p>
-                </div>
-                <div class="p-4 rounded-lg bg-purple-50">
-                    <p class="text-sm text-gray-600">Health Records</p>
-                    <p class="text-2xl font-bold text-purple-600">{{ health_record_count }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
+     
     <!-- Edit Doctor Modal -->
     <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
